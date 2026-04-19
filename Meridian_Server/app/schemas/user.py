@@ -12,3 +12,5 @@ class UserRead(BaseModel):
     id: int
     email: EmailStr
     name: str
+    role: str | None = None
+    permissions: list[str] = []

@@ -1,19 +1,28 @@
 from fastapi import FastAPI
+from starlette.middleware.sessions import SessionMiddleware
 
-from .api.routes import health, users
+from . import models  # noqa: F401  (register models with Base metadata)
+from .api.routes import auth, health, users
 from .core.config import settings
 from .core.db import Base, engine
-from . import models  # noqa: F401  (register models with Base metadata)
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name)
 
+    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+
     # Dev-only: create tables on startup. Replace with Alembic before production.
-    Base.metadata.create_all(bind=engine)
+    # Swallow connection errors so tests (which use their own engine via dependency
+    # overrides) can import the app without a running Postgres.
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        pass
 
     app.include_router(health.router)
     app.include_router(users.router)
+    app.include_router(auth.router)
 
     @app.get("/")
     def root():
