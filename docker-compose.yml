@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-meridian}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meridian}
+      POSTGRES_DB: ${POSTGRES_DB:-meridian}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-meridian}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: ./Meridian_Server
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-meridian}:${POSTGRES_PASSWORD:-meridian}@db:5432/${POSTGRES_DB:-meridian}
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    build: ./Meridian_Client
+    environment:
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - server
+
+volumes:
+  db_data:
