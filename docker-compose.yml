@@ -27,7 +27,10 @@ services:
         condition: service_healthy
 
   client:
-    build: ./Meridian_Client
+    build:
+      context: ./Meridian_Client
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     environment:
       PORT: 8080
     ports:

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import models  # noqa: F401  (register models with Base metadata)
@@ -10,6 +11,13 @@ from .core.db import Base, engine
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name)
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 
     # Dev-only: create tables on startup. Replace with Alembic before production.
