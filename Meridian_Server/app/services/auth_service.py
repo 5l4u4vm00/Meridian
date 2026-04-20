@@ -10,8 +10,14 @@ from ..core.security import (
     hash_password,
     verify_password,
 )
+from ..core.seed import DEFAULT_ROLE
 from ..models.user import User
-from ..repositories import oauth_repository, refresh_token_repository, user_repository
+from ..repositories import (
+    oauth_repository,
+    refresh_token_repository,
+    role_repository,
+    user_repository,
+)
 from ..schemas.auth import AccessToken, RegisterRequest, TokenPair
 
 
@@ -22,15 +28,22 @@ class AuthError(Exception):
         self.status_code = status_code
 
 
+def _apply_default_role(db: Session, user: User) -> User:
+    if role_repository.get_role_by_name(db, DEFAULT_ROLE) is None:
+        return user
+    return role_repository.assign_role(db, user, DEFAULT_ROLE)
+
+
 def register(db: Session, payload: RegisterRequest) -> User:
     if user_repository.get_by_email(db, payload.email) is not None:
         raise AuthError("email already registered", status_code=400)
-    return user_repository.create(
+    user = user_repository.create(
         db,
         email=payload.email,
         name=payload.name,
         hashed_password=hash_password(payload.password),
     )
+    return _apply_default_role(db, user)
 
 
 def authenticate(db: Session, email: str, password: str) -> User:
@@ -113,6 +126,7 @@ def login_or_create_from_oauth(
     user = user_repository.get_by_email(db, email)
     if user is None:
         user = user_repository.create(db, email=email, name=name, hashed_password=None)
+        user = _apply_default_role(db, user)
     oauth_repository.link(
         db,
         user_id=user.id,

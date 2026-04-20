@@ -55,15 +55,7 @@ def logout(payload: RefreshRequest, db: Session = Depends(get_db)) -> None:
 
 @router.get("/me", response_model=UserRead)
 def me(user=Depends(get_current_user)) -> UserRead:
-    role_name = user.role.name if user.role is not None else None
-    perms = [p.name for p in user.role.permissions] if user.role is not None else []
-    return UserRead(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        role=role_name,
-        permissions=perms,
-    )
+    return UserRead.from_user(user)
 
 
 def _require_client(provider: str):

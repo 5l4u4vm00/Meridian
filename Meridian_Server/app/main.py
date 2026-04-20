@@ -5,7 +5,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from . import models  # noqa: F401  (register models with Base metadata)
 from .api.routes import auth, health, users
 from .core.config import settings
-from .core.db import Base, engine
+from .core.db import Base, SessionLocal, engine
+from .core.seed import seed_rbac
 
 
 def create_app() -> FastAPI:
@@ -25,6 +26,11 @@ def create_app() -> FastAPI:
     # overrides) can import the app without a running Postgres.
     try:
         Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_rbac(db, initial_admin_email=settings.initial_admin_email)
+        finally:
+            db.close()
     except Exception:
         pass
 

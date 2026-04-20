@@ -36,17 +36,17 @@ def _db_from_client(client):
     return next(override())
 
 
-def test_new_user_has_no_role_or_perms(client):
+def test_new_user_gets_default_role(client):
     tokens = _register(client).json()
     claims = decode_token(tokens["access_token"])
-    assert "role" not in claims
-    assert claims.get("perms", []) == []
+    assert claims.get("role") == "user"
+    assert set(claims.get("perms", [])) >= {"users:read", "content:read"}
 
     me = client.get("/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"})
     assert me.status_code == 200
     body = me.json()
-    assert body["role"] is None
-    assert body["permissions"] == []
+    assert body["role"] == "user"
+    assert set(body["permissions"]) >= {"users:read", "content:read"}
 
 
 def test_role_assignment_reflected_in_jwt_and_me(client):
@@ -64,12 +64,12 @@ def test_role_assignment_reflected_in_jwt_and_me(client):
     tokens = login.json()
     claims = decode_token(tokens["access_token"])
     assert claims["role"] == "admin"
-    assert set(claims["perms"]) == {"widget:write", "widget:read"}
+    assert {"widget:write", "widget:read"} <= set(claims["perms"])
 
     me = client.get("/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"})
     body = me.json()
     assert body["role"] == "admin"
-    assert set(body["permissions"]) == {"widget:write", "widget:read"}
+    assert {"widget:write", "widget:read"} <= set(body["permissions"])
 
 
 def test_require_permission_forbids_without_perm(client):

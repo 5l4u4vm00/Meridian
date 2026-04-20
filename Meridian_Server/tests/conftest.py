@@ -6,6 +6,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
 from app.core.db import Base
+from app.core.seed import seed_rbac
 from app.main import app
 
 
@@ -18,6 +19,11 @@ def client():
     )
     TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
+    seed_db = TestingSessionLocal()
+    try:
+        seed_rbac(seed_db)
+    finally:
+        seed_db.close()
 
     def override_get_db():
         db = TestingSessionLocal()

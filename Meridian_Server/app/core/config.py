@@ -19,6 +19,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8080",
     ]
 
+    initial_admin_email: str | None = None
+
     google_client_id: str | None = None
     google_client_secret: str | None = None
     github_client_id: str | None = None

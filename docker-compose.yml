@@ -17,6 +17,7 @@ services:
 
   server:
     build: ./Meridian_Server
+    env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-meridian}:${POSTGRES_PASSWORD:-meridian}@db:5432/${POSTGRES_DB:-meridian}
       PORT: 8000
