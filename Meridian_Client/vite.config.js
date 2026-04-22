@@ -13,6 +13,8 @@ export default defineConfig({
     proxy: {
       '/auth': { target: apiTarget, changeOrigin: true },
       '/api': { target: apiTarget, changeOrigin: true },
+      '/projects': { target: apiTarget, changeOrigin: true },
+      '/tasks': { target: apiTarget, changeOrigin: true },
     },
   },
 })

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import models  # noqa: F401  (register models with Base metadata)
-from .api.routes import auth, health, users
+from .api.routes import auth, health, projects, tasks, users
 from .core.config import settings
 from .core.db import Base, SessionLocal, engine
 from .core.seed import seed_rbac
@@ -37,6 +37,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(users.router)
     app.include_router(auth.router)
+    app.include_router(projects.router)
+    app.include_router(tasks.router)
 
     @app.get("/")
     def root():
