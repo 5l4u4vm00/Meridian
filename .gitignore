@@ -38,3 +38,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local dev storage (uploaded attachments)
+var/

@@ -9,5 +9,6 @@ passlib[bcrypt]
 bcrypt<4.1
 authlib
 itsdangerous
+python-multipart
 pytest
 httpx

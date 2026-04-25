@@ -21,6 +21,9 @@ class Settings(BaseSettings):
 
     initial_admin_email: str | None = None
 
+    attachments_dir: str = "var/attachments"
+    attachment_max_bytes: int = 25 * 1024 * 1024
+
     google_client_id: str | None = None
     google_client_secret: str | None = None
     github_client_id: str | None = None

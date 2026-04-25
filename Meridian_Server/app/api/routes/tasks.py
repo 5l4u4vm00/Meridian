@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ...models.user import User
+from ...schemas.attachment import AttachmentRead
+from ...schemas.comment import CommentRead
 from ...schemas.task import BoardColumn, BoardRead, TaskCreate, TaskMove, TaskRead, TaskUpdate
 from ...models.task import TaskStatus
-from ...services import task_service
+from ...services import attachment_service, comment_service, task_service
 from ...services.task_service import TaskError
 from ..deps import get_current_user, get_db
 
@@ -70,6 +72,25 @@ def update_task(
     except TaskError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return TaskRead.from_task(task)
+
+
+@router.get("/tasks/{task_id}/detail")
+def get_task_detail(
+    task_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        task = task_service.get_task(db, task_id)
+    except TaskError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    comments = comment_service.list_comments(db, task_id)
+    attachments = attachment_service.list_attachments(db, task_id)
+    return {
+        "task": TaskRead.from_task(task),
+        "comments": [CommentRead.from_comment(c) for c in comments],
+        "attachments": [AttachmentRead.from_attachment(a) for a in attachments],
+    }
 
 
 @router.post("/tasks/{task_id}/move", response_model=TaskRead)

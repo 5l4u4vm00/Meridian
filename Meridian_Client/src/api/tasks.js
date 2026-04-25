@@ -2,6 +2,8 @@ import { apiFetch } from '../auth/apiClient'
 
 export const listBoard = (code) => apiFetch(`/projects/${code}/tasks`)
 
+export const getTaskDetail = (id) => apiFetch(`/tasks/${id}/detail`)
+
 export const createTask = (code, payload) =>
   apiFetch(`/projects/${code}/tasks`, { method: 'POST', body: payload })
 

@@ -8,9 +8,7 @@ import {
   Inbox,
   Layers,
   LogOut,
-  MessageSquare,
   MoreHorizontal,
-  Paperclip,
   Plus,
   Search,
   Settings,
@@ -18,6 +16,8 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import TaskCard from '../components/board/TaskCard'
+import TaskDrawer from '../components/board/TaskDrawer'
 import { useAuth } from '../auth/useAuth'
 import {
   createProject as apiCreateProject,
@@ -42,12 +42,6 @@ const STATUS_LABEL = {
   in_review: 'In Review',
   shipped: 'Shipped',
 }
-const PRIORITY_STYLES = {
-  high: { color: 'var(--accent)', label: 'High' },
-  medium: { color: 'var(--ink-60)', label: 'Med' },
-  low: { color: 'var(--ink-40)', label: 'Low' },
-}
-
 const DEFAULT_COLORS = ['#c4511c', '#2d4a3e', '#3d3d5c', '#8a6d3b']
 
 function userInitials(name, email) {
@@ -56,12 +50,6 @@ function userInitials(name, email) {
   const parts = src.split(/\s+/)
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   return src.slice(0, 2).toUpperCase()
-}
-
-function formatDue(iso) {
-  if (!iso) return null
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
 }
 
 function relativeTime(iso) {
@@ -102,53 +90,6 @@ function ColumnTitle({ title }) {
   }
   if (title === 'Shipped') return <em>{title}</em>
   return title
-}
-
-function TaskCard({ task, onDragStart, isDragging }) {
-  const pri = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.medium
-  return (
-    <div
-      className="card"
-      data-task-id={task.id}
-      draggable
-      onDragStart={(e) => onDragStart(e, task)}
-      style={{ opacity: isDragging ? 0.4 : 1 }}
-    >
-      <div className="card-top">
-        <span className="card-id">{task.code}</span>
-        <span className="priority-dot" style={{ background: pri.color }} title={pri.label} />
-      </div>
-      <div className="card-title">{task.title}</div>
-      {task.tags?.length > 0 && (
-        <div className="card-tags">
-          {task.tags.map((t) => (
-            <span key={t} className="card-tag">
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="card-footer">
-        <div className="card-footer-left">
-          <span>
-            <MessageSquare size={10} strokeWidth={1.5} /> 0
-          </span>
-          <span>
-            <Paperclip size={10} strokeWidth={1.5} /> 0
-          </span>
-          {task.assignee_initials && (
-            <div
-              className="avatar"
-              style={{ width: 20, height: 20, fontSize: 8.5, marginLeft: 2 }}
-            >
-              {task.assignee_initials}
-            </div>
-          )}
-        </div>
-        {task.due_date && <span className="card-due">{formatDue(task.due_date)}</span>}
-      </div>
-    </div>
-  )
 }
 
 function Modal({ title, onClose, children }) {
@@ -340,6 +281,7 @@ export default function BoardPage() {
   const [draggingId, setDraggingId] = useState(null)
   const [dragOverStatus, setDragOverStatus] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [detailTaskId, setDetailTaskId] = useState(null)
 
   const activeProject = useMemo(
     () => projects.find((p) => p.code === activeCode) || null,
@@ -377,19 +319,19 @@ export default function BoardPage() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        setLoading(true)
-        const list = await apiListProjects()
-        if (cancelled) return
-        setProjects(list)
-        setActiveCode(list[0]?.code || null)
-      } catch (e) {
-        if (!cancelled) setError(e.message || 'Failed to load projects')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          setLoading(true)
+          const list = await apiListProjects()
+          if (cancelled) return
+          setProjects(list)
+          setActiveCode(list[0]?.code || null)
+        } catch (e) {
+          if (!cancelled) setError(e.message || 'Failed to load projects')
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      })()
     return () => {
       cancelled = true
     }
@@ -398,23 +340,23 @@ export default function BoardPage() {
   useEffect(() => {
     if (!activeCode) return undefined
     let cancelled = false
-    ;(async () => {
-      try {
-        const [b, s, w, a] = await Promise.all([
-          apiListBoard(activeCode),
-          apiGetStats(activeCode).catch(() => null),
-          apiGetWorkload(activeCode).catch(() => []),
-          apiGetActivity(activeCode).catch(() => []),
-        ])
-        if (cancelled) return
-        setBoard(b)
-        setStats(s)
-        setWorkload(w)
-        setActivity(a)
-      } catch (e) {
-        if (!cancelled) setError(e.message || 'Failed to load board')
-      }
-    })()
+      ; (async () => {
+        try {
+          const [b, s, w, a] = await Promise.all([
+            apiListBoard(activeCode),
+            apiGetStats(activeCode).catch(() => null),
+            apiGetWorkload(activeCode).catch(() => []),
+            apiGetActivity(activeCode).catch(() => []),
+          ])
+          if (cancelled) return
+          setBoard(b)
+          setStats(s)
+          setWorkload(w)
+          setActivity(a)
+        } catch (e) {
+          if (!cancelled) setError(e.message || 'Failed to load board')
+        }
+      })()
     return () => {
       cancelled = true
     }
@@ -743,6 +685,7 @@ export default function BoardPage() {
                   task={task}
                   onDragStart={onDragStart}
                   isDragging={draggingId === task.id}
+                  onOpen={(id) => setDetailTaskId(id)}
                 />
               ))}
 
@@ -844,8 +787,6 @@ export default function BoardPage() {
         )}
       </aside>
 
-      <div className="corner-mark">Meridian · Folio · Phase 01</div>
-
       {error && (
         <div className="toast" onClick={() => setError(null)}>
           {error}
@@ -863,6 +804,14 @@ export default function BoardPage() {
           initialStatus={newTaskStatus}
           onClose={() => setNewTaskStatus(null)}
           onCreate={handleCreateTask}
+        />
+      )}
+      {detailTaskId != null && (
+        <TaskDrawer
+          key={detailTaskId}
+          taskId={detailTaskId}
+          onClose={() => setDetailTaskId(null)}
+          onChanged={() => refreshBoard(activeCode)}
         />
       )}
     </div>

@@ -49,16 +49,25 @@ export class ApiError extends Error {
   }
 }
 
-async function rawFetch(path, { method = 'GET', body, auth = false } = {}) {
-  const headers = { 'Content-Type': 'application/json' }
+async function rawFetch(path, { method = 'GET', body, auth = false, raw = false } = {}) {
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+  const headers = {}
+  if (!isFormData && body !== undefined) headers['Content-Type'] = 'application/json'
   if (auth && tokenStore.access) {
     headers.Authorization = `Bearer ${tokenStore.access}`
   }
   const res = await fetch(resolveUrl(path), {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
   })
+  if (raw) {
+    if (!res.ok) {
+      const parsed = await parse(res)
+      throw new ApiError(res.status, parsed)
+    }
+    return res
+  }
   const parsed = await parse(res)
   if (!res.ok) throw new ApiError(res.status, parsed)
   return parsed

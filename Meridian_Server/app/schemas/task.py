@@ -49,6 +49,8 @@ class TaskRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None
+    comment_count: int
+    attachment_count: int
 
     @classmethod
     def from_task(cls, task) -> "TaskRead":
@@ -77,6 +79,8 @@ class TaskRead(BaseModel):
             created_at=task.created_at,
             updated_at=task.updated_at,
             completed_at=task.completed_at,
+            comment_count=len(task.comments or []),
+            attachment_count=len(task.attachments or []),
         )
 
 
@@ -87,3 +91,5 @@ class BoardColumn(BaseModel):
 
 class BoardRead(BaseModel):
     columns: list[BoardColumn]
+
+

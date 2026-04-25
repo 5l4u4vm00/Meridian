@@ -1,4 +1,6 @@
 from .activity_event import ActivityEvent
+from .attachment import Attachment
+from .comment import Comment
 from .oauth_account import OAuthAccount
 from .project import Project
 from .project_member import ProjectMember
@@ -19,4 +21,6 @@ __all__ = [
     "TaskPriority",
     "TaskStatus",
     "ActivityEvent",
+    "Comment",
+    "Attachment",
 ]

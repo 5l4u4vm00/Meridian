@@ -5,13 +5,15 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
+from app.core.config import settings
 from app.core.db import Base
 from app.core.seed import seed_rbac
 from app.main import app
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "attachments_dir", str(tmp_path / "attachments"))
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

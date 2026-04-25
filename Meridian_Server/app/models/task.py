@@ -59,3 +59,17 @@ class Task(Base):
 
     assignee = relationship("User", foreign_keys=[assignee_id], lazy="joined")
     project = relationship("Project", foreign_keys=[project_id], lazy="joined")
+    comments = relationship(
+        "Comment",
+        backref="task",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Comment.created_at",
+    )
+    attachments = relationship(
+        "Attachment",
+        backref="task",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Attachment.created_at",
+    )
