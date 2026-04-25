@@ -181,17 +181,42 @@ function NewProjectDialog({ onClose, onCreate }) {
   )
 }
 
+const PRIORITY_DUE_OFFSET_DAYS = { high: 2, medium: 7, low: 14 }
+
+function toDateInputValue(date) {
+  const tzOffset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 10)
+}
+
+function defaultDueDateFor(priority) {
+  const d = new Date()
+  d.setDate(d.getDate() + (PRIORITY_DUE_OFFSET_DAYS[priority] ?? 7))
+  return toDateInputValue(d)
+}
+
 function NewTaskDialog({ initialStatus, onClose, onCreate }) {
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState('medium')
   const [tags, setTags] = useState('')
   const [status, setStatus] = useState(initialStatus)
+  const [dueDate, setDueDate] = useState(() => defaultDueDateFor('medium'))
+  const [dueDateTouched, setDueDateTouched] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+
+  const today = toDateInputValue(new Date())
+
+  useEffect(() => {
+    if (!dueDateTouched) setDueDate(defaultDueDateFor(priority))
+  }, [priority, dueDateTouched])
 
   const submit = async (e) => {
     e.preventDefault()
     setError(null)
+    if (dueDate && dueDate < today) {
+      setError('Due date cannot be earlier than today')
+      return
+    }
     setSubmitting(true)
     try {
       await onCreate({
@@ -202,6 +227,7 @@ function NewTaskDialog({ initialStatus, onClose, onCreate }) {
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
+        ...(dueDate ? { due_date: dueDate } : {}),
       })
       onClose()
     } catch (err) {
@@ -243,6 +269,27 @@ function NewTaskDialog({ initialStatus, onClose, onCreate }) {
             </select>
           </label>
         </div>
+        <label className="field">
+          <span className="field-label">Due date</span>
+          <input
+            type="date"
+            value={dueDate}
+            min={today}
+            onClick={(e) => {
+              if (typeof e.currentTarget.showPicker === 'function') {
+                try {
+                  e.currentTarget.showPicker()
+                } catch {
+                  // browser refused (e.g., not a user gesture) — ignore
+                }
+              }
+            }}
+            onChange={(e) => {
+              setDueDateTouched(true)
+              setDueDate(e.target.value)
+            }}
+          />
+        </label>
         <label className="field">
           <span className="field-label">Tags (comma-separated)</span>
           <input
