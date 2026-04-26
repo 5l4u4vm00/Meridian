@@ -30,17 +30,7 @@ def list_projects(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    projects = project_service.list_projects(db)
-    return [
-        ProjectSummary(
-            id=p.id,
-            code=p.code,
-            name=p.name,
-            color=p.color,
-            task_count=project_service.task_count(db, p.id),
-        )
-        for p in projects
-    ]
+    return project_service.list_project_summaries(db)
 
 
 @router.get("/{code}", response_model=ProjectRead)

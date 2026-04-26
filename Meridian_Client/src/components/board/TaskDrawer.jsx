@@ -132,7 +132,7 @@ export default function TaskDrawer({ taskId, onClose, onChanged }) {
               className="drawer-desc"
               value={descDraft}
               placeholder="Add a description…"
-              onChange={(e) => setDescDraft(e.target.value)}
+              disabled
               onBlur={saveDescription}
               rows={4}
             />

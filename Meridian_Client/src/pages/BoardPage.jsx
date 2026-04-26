@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Archive,
+  ArrowLeft,
   ArrowUpRight,
   Calendar,
   ChevronRight,
@@ -14,10 +16,13 @@ import {
   Settings,
   TrendingUp,
   Users,
-  X,
 } from 'lucide-react'
 import TaskCard from '../components/board/TaskCard'
 import TaskDrawer from '../components/board/TaskDrawer'
+import Modal from '../components/Modal'
+import NewProjectDialog from '../components/NewProjectDialog'
+import { DEFAULT_PROJECT_COLORS } from '../components/projectColors'
+import { relativeTime } from '../utils/time'
 import { useAuth } from '../auth/useAuth'
 import {
   createProject as apiCreateProject,
@@ -25,8 +30,10 @@ import {
 } from '../api/projects'
 import {
   createTask as apiCreateTask,
+  getTaskDetail as apiGetTaskDetail,
   listBoard as apiListBoard,
   moveTask as apiMoveTask,
+  updateTask as apiUpdateTask,
 } from '../api/tasks'
 import {
   getActivity as apiGetActivity,
@@ -42,29 +49,12 @@ const STATUS_LABEL = {
   in_review: 'In Review',
   shipped: 'Shipped',
 }
-const DEFAULT_COLORS = ['#c4511c', '#2d4a3e', '#3d3d5c', '#8a6d3b']
-
 function userInitials(name, email) {
   const src = (name || email || '').trim()
   if (!src) return '?'
   const parts = src.split(/\s+/)
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   return src.slice(0, 2).toUpperCase()
-}
-
-function relativeTime(iso) {
-  if (!iso) return ''
-  const t = new Date(iso).getTime()
-  const delta = Math.max(0, Date.now() - t)
-  const s = Math.floor(delta / 1000)
-  if (s < 60) return `${s}s`
-  const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
 }
 
 const VERB_PHRASE = {
@@ -90,95 +80,6 @@ function ColumnTitle({ title }) {
   }
   if (title === 'Shipped') return <em>{title}</em>
   return title
-}
-
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <span className="serif modal-title">{title}</span>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
-            <X size={14} strokeWidth={1.5} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function NewProjectDialog({ onClose, onCreate }) {
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
-  const [color, setColor] = useState(DEFAULT_COLORS[0])
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState(null)
-
-  const submit = async (e) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    try {
-      await onCreate({ name: name.trim(), code: code.trim().toUpperCase(), color })
-      onClose()
-    } catch (err) {
-      setError(err.message || 'Failed to create project')
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Modal title="New project" onClose={onClose}>
-      <form onSubmit={submit} className="modal-body">
-        <label className="field">
-          <span className="field-label">Name</span>
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Meridian Rebrand"
-            required
-          />
-        </label>
-        <label className="field">
-          <span className="field-label">Code</span>
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="MRD"
-            pattern="[A-Z0-9]{2,8}"
-            title="2–8 uppercase letters or digits"
-            required
-          />
-        </label>
-        <label className="field">
-          <span className="field-label">Color</span>
-          <div className="color-row">
-            {DEFAULT_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`color-swatch ${color === c ? 'selected' : ''}`}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
-                aria-label={`color ${c}`}
-              />
-            ))}
-          </div>
-        </label>
-        {error && <div className="form-error">{error}</div>}
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn primary" disabled={submitting}>
-            Create project
-          </button>
-        </div>
-      </form>
-    </Modal>
-  )
 }
 
 const PRIORITY_DUE_OFFSET_DAYS = { high: 2, medium: 7, low: 14 }
@@ -312,8 +213,162 @@ function NewTaskDialog({ initialStatus, onClose, onCreate }) {
   )
 }
 
+function EditTaskDialog({ taskId, onClose, onSave }) {
+  const [loading, setLoading] = useState(true)
+  const [original, setOriginal] = useState(null)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState('medium')
+  const [dueDate, setDueDate] = useState('')
+  const [tags, setTags] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  const today = toDateInputValue(new Date())
+
+  useEffect(() => {
+    let cancelled = false
+    apiGetTaskDetail(taskId)
+      .then((detail) => {
+        if (cancelled) return
+        const t = detail.task
+        setOriginal(t)
+        setTitle(t.title || '')
+        setDescription(t.description || '')
+        setPriority(t.priority || 'medium')
+        setDueDate(t.due_date ? t.due_date.slice(0, 10) : '')
+        setTags((t.tags || []).join(', '))
+        setLoading(false)
+      })
+      .catch((e) => {
+        if (cancelled) return
+        setError(e.message || 'Failed to load task')
+        setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [taskId])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!original) return
+    setError(null)
+    if (dueDate && dueDate < today && dueDate !== (original.due_date || '').slice(0, 10)) {
+      setError('Due date cannot be earlier than today')
+      return
+    }
+
+    const payload = {}
+    const trimmedTitle = title.trim()
+    if (trimmedTitle !== original.title) payload.title = trimmedTitle
+    if (description !== (original.description || '')) payload.description = description
+    if (priority !== original.priority) payload.priority = priority
+    const origDue = original.due_date ? original.due_date.slice(0, 10) : ''
+    if (dueDate !== origDue) payload.due_date = dueDate || null
+    const nextTags = tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+    const origTags = original.tags || []
+    const tagsChanged =
+      nextTags.length !== origTags.length ||
+      nextTags.some((t, i) => t !== origTags[i])
+    if (tagsChanged) payload.tags = nextTags
+
+    if (Object.keys(payload).length === 0) {
+      onClose()
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await apiUpdateTask(taskId, payload)
+      await onSave?.()
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to update task')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal title="Edit task" onClose={onClose}>
+      {loading ? (
+        <div className="modal-body" style={{ color: 'var(--ink-60)' }}>Loading…</div>
+      ) : (
+        <form onSubmit={submit} className="modal-body">
+          <label className="field">
+            <span className="field-label">Title</span>
+            <input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">Description</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+            />
+          </label>
+          <div className="field-row">
+            <label className="field">
+              <span className="field-label">Priority</span>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label className="field">
+              <span className="field-label">Due date</span>
+              <input
+                type="date"
+                value={dueDate}
+                onClick={(e) => {
+                  if (typeof e.currentTarget.showPicker === 'function') {
+                    try {
+                      e.currentTarget.showPicker()
+                    } catch {
+                      // browser refused — ignore
+                    }
+                  }
+                }}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span className="field-label">Tags (comma-separated)</span>
+            <input
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="identity, review"
+            />
+          </label>
+          {error && <div className="form-error">{error}</div>}
+          <div className="modal-actions">
+            <button type="button" className="btn" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn primary" disabled={submitting}>
+              {submitting ? 'Saving…' : 'Update task'}
+            </button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  )
+}
+
 export default function BoardPage() {
   const { user, logout } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const [projects, setProjects] = useState([])
   const [activeCode, setActiveCode] = useState(null)
@@ -329,6 +384,7 @@ export default function BoardPage() {
   const [dragOverStatus, setDragOverStatus] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState(null)
+  const [editTaskId, setEditTaskId] = useState(null)
 
   const activeProject = useMemo(
     () => projects.find((p) => p.code === activeCode) || null,
@@ -372,7 +428,15 @@ export default function BoardPage() {
           const list = await apiListProjects()
           if (cancelled) return
           setProjects(list)
-          setActiveCode(list[0]?.code || null)
+          const requestedCode = location.state?.code
+          const initial =
+            (requestedCode && list.find((p) => p.code === requestedCode)?.code) ||
+            list[0]?.code ||
+            null
+          setActiveCode(initial)
+          if (requestedCode) {
+            navigate('/board', { replace: true, state: null })
+          }
         } catch (e) {
           if (!cancelled) setError(e.message || 'Failed to load projects')
         } finally {
@@ -382,6 +446,7 @@ export default function BoardPage() {
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -521,8 +586,7 @@ export default function BoardPage() {
       <div className="board-empty">
         <div>
           <div className="brand">
-            <span className="brand-mark">Folio</span>
-            <span className="brand-sub">/ 01</span>
+            <span className="brand-mark">Meridian</span>
           </div>
           <h2 className="serif empty-title">
             Start your <em>first project.</em>
@@ -554,8 +618,7 @@ export default function BoardPage() {
     <div className="pm-root">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">Folio</span>
-          <span className="brand-sub">/ 04</span>
+          <span className="brand-mark">Meridian</span>
         </div>
         <div className="brand-sub">A Project Studio</div>
         <div className="brand-rule" />
@@ -581,7 +644,10 @@ export default function BoardPage() {
 
         <div className="sidebar-section">
           <div className="section-label">
-            <span>Projects</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span>Projects</span>
+              <Link to="/" className="section-label-link">All</Link>
+            </span>
             <span className="section-label-num">ii.</span>
           </div>
           {projects.map((p) => (
@@ -625,6 +691,9 @@ export default function BoardPage() {
 
       <main className="main">
         <div className="topbar">
+          <Link to="/" className="btn back-btn">
+            <ArrowLeft size={13} strokeWidth={1.8} /> Projects
+          </Link>
           <div className="search">
             <Search size={14} strokeWidth={1.5} color="var(--ink-60)" />
             <input placeholder="Search tasks, projects, people…" />
@@ -733,6 +802,7 @@ export default function BoardPage() {
                   onDragStart={onDragStart}
                   isDragging={draggingId === task.id}
                   onOpen={(id) => setDetailTaskId(id)}
+                  onEdit={(id) => setEditTaskId(id)}
                 />
               ))}
 
@@ -859,6 +929,17 @@ export default function BoardPage() {
           taskId={detailTaskId}
           onClose={() => setDetailTaskId(null)}
           onChanged={() => refreshBoard(activeCode)}
+        />
+      )}
+      {editTaskId != null && (
+        <EditTaskDialog
+          key={editTaskId}
+          taskId={editTaskId}
+          onClose={() => setEditTaskId(null)}
+          onSave={async () => {
+            await refreshBoard(activeCode)
+            await refreshProjects()
+          }}
         />
       )}
     </div>

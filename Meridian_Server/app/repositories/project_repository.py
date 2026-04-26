@@ -1,9 +1,11 @@
-from sqlalchemy import func, select
+from datetime import datetime
+
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from ..models.project import Project
 from ..models.project_member import ProjectMember
-from ..models.task import Task
+from ..models.task import Task, TaskStatus
 
 
 def create(
@@ -40,6 +42,43 @@ def get_by_code(db: Session, code: str) -> Project | None:
 
 def list_all(db: Session) -> list[Project]:
     return list(db.scalars(select(Project).order_by(Project.created_at)))
+
+
+def list_with_summary(db: Session) -> list[dict]:
+    shipped_expr = func.sum(case((Task.status == TaskStatus.shipped, 1), else_=0))
+    total_expr = func.count(Task.id)
+    last_expr = func.max(Task.updated_at)
+    stmt = (
+        select(
+            Project.id,
+            Project.code,
+            Project.name,
+            Project.color,
+            shipped_expr,
+            total_expr,
+            last_expr,
+        )
+        .outerjoin(Task, Task.project_id == Project.id)
+        .group_by(Project.id, Project.code, Project.name, Project.color, Project.created_at)
+        .order_by(Project.created_at)
+    )
+    out: list[dict] = []
+    for pid, code, name, color, shipped, total, last in db.execute(stmt).all():
+        shipped_n = int(shipped or 0)
+        total_n = int(total or 0)
+        out.append(
+            {
+                "id": pid,
+                "code": code,
+                "name": name,
+                "color": color,
+                "task_count": total_n,
+                "open_count": total_n - shipped_n,
+                "shipped_count": shipped_n,
+                "last_activity": last,
+            }
+        )
+    return out
 
 
 def task_count(db: Session, project_id: int) -> int:

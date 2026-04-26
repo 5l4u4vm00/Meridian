@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { MessageSquare, Paperclip } from 'lucide-react'
+import { MessageSquare, Paperclip, Pencil } from 'lucide-react'
 
 const PRIORITY_STYLES = {
   high: { color: 'var(--accent)', label: 'High' },
@@ -13,9 +13,10 @@ function formatDue(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
 }
 
-export default function TaskCard({ task, onDragStart, isDragging, onOpen }) {
+export default function TaskCard({ task, onDragStart, isDragging, onOpen, onEdit }) {
   const pri = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.medium
   const downRef = useRef({ x: 0, y: 0 })
+  const stop = (e) => e.stopPropagation()
   return (
     <div
       className="card"
@@ -34,7 +35,27 @@ export default function TaskCard({ task, onDragStart, isDragging, onOpen }) {
     >
       <div className="card-top">
         <span className="card-id">{task.code}</span>
-        <span className="priority-dot" style={{ background: pri.color }} title={pri.label} />
+        <div className="card-top-right">
+          <button
+            type="button"
+            className="card-edit-btn"
+            aria-label="Edit task"
+            onMouseDown={stop}
+            onMouseUp={stop}
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit?.(task.id)
+            }}
+            draggable={false}
+            onDragStart={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+          >
+            <Pencil size={14} strokeWidth={1.6} />
+          </button>
+          <span className="priority-dot" style={{ background: pri.color }} title={pri.label} />
+        </div>
       </div>
       <div className="card-title">{task.title}</div>
       {task.tags?.length > 0 && (

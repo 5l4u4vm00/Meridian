@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from ..models.project import Project
 from ..repositories import project_repository
-from ..schemas.project import ProjectCreate, ProjectUpdate
+from ..schemas.project import ProjectCreate, ProjectSummary, ProjectUpdate
 
 
 class ProjectError(Exception):
@@ -30,6 +30,12 @@ def create_project(db: Session, payload: ProjectCreate, *, created_by_id: int) -
 
 def list_projects(db: Session) -> list[Project]:
     return project_repository.list_all(db)
+
+
+def list_project_summaries(db: Session) -> list[ProjectSummary]:
+    return [
+        ProjectSummary(**row) for row in project_repository.list_with_summary(db)
+    ]
 
 
 def get_by_code(db: Session, code: str) -> Project:

@@ -19,7 +19,6 @@ class TaskUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     priority: TaskPriority | None = None
-    assignee_id: int | None = None
     tags: list[str] | None = None
     due_date: date | None = None
 
@@ -61,7 +60,9 @@ class TaskRead(BaseModel):
                 initials = (parts[0][0] + parts[-1][0]).upper()
             elif parts:
                 initials = parts[0][:2].upper()
-        code = f"{task.project.code}-{task.number}" if task.project else str(task.number)
+        code = (
+            f"{task.project.code}-{task.number}" if task.project else str(task.number)
+        )
         return cls(
             id=task.id,
             project_id=task.project_id,
@@ -91,5 +92,3 @@ class BoardColumn(BaseModel):
 
 class BoardRead(BaseModel):
     columns: list[BoardColumn]
-
-

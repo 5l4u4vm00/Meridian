@@ -80,6 +80,22 @@
   letter-spacing: 0;
   font-size: 11px;
 }
+.back-btn {
+  text-decoration: none;
+  color: var(--ink-80);
+  margin-right: 12px;
+}
+.section-label-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+  text-decoration: none;
+}
+.section-label-link:hover {
+  color: var(--ink-80);
+}
 
 .nav-item {
   display: flex;
@@ -374,6 +390,24 @@
   color: var(--ink-40);
 }
 .priority-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.card-top-right { display: flex; align-items: center; gap: 6px; }
+.card-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--ink-20, rgba(26, 26, 26, 0.12));
+  padding: 0;
+  border-radius: 4px;
+  color: var(--ink-60);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.card:hover .card-edit-btn { opacity: 1; }
+.card-edit-btn:hover { color: var(--ink); background: rgba(26, 26, 26, 0.06); }
 .card-title {
   font-family: 'Fraunces', serif;
   font-size: 15.5px;

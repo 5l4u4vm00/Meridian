@@ -27,6 +27,37 @@ def test_create_and_list_project(client):
     assert len(data) == 1
     assert data[0]["code"] == "MRD"
     assert data[0]["task_count"] == 0
+    assert data[0]["open_count"] == 0
+    assert data[0]["shipped_count"] == 0
+    assert data[0]["last_activity"] is None
+
+
+def test_list_project_includes_summary_counts(client):
+    headers = _auth_headers(client)
+    client.post(
+        "/projects",
+        json={"code": "MRD", "name": "Meridian"},
+        headers=headers,
+    )
+    t1 = client.post(
+        "/projects/MRD/tasks",
+        json={"title": "design", "status": "backlog"},
+        headers=headers,
+    )
+    assert t1.status_code == 201, t1.text
+    t2 = client.post(
+        "/projects/MRD/tasks",
+        json={"title": "ship it", "status": "shipped"},
+        headers=headers,
+    )
+    assert t2.status_code == 201, t2.text
+
+    lst = client.get("/projects", headers=headers).json()
+    row = next(p for p in lst if p["code"] == "MRD")
+    assert row["task_count"] == 2
+    assert row["open_count"] == 1
+    assert row["shipped_count"] == 1
+    assert row["last_activity"] is not None
 
 
 def test_project_requires_auth(client):

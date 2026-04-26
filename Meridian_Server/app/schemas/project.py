@@ -39,3 +39,6 @@ class ProjectSummary(BaseModel):
     name: str
     color: str
     task_count: int
+    open_count: int
+    shipped_count: int
+    last_activity: datetime | None = None
