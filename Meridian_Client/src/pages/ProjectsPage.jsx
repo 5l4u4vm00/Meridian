@@ -64,17 +64,17 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        setLoading(true)
-        const list = await apiListProjects()
-        if (!cancelled) setProjects(list)
-      } catch (e) {
-        if (!cancelled) setError(e.message || 'Failed to load projects')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          setLoading(true)
+          const list = await apiListProjects()
+          if (!cancelled) setProjects(list)
+        } catch (e) {
+          if (!cancelled) setError(e.message || 'Failed to load projects')
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      })()
     return () => {
       cancelled = true
     }
@@ -222,11 +222,11 @@ export default function ProjectsPage() {
         <table className="projects-table">
           <thead>
             <tr>
-              <th className="col-code">Code</th>
-              <th className="col-name">Name</th>
-              <th className="col-progress">Progress</th>
-              <th className="col-tasks">Tasks</th>
-              <th className="col-activity">Last activity</th>
+              <th className="col-header">Code</th>
+              <th className="col-header">Name</th>
+              <th className="col-header">Progress</th>
+              <th className="col-header">Tasks</th>
+              <th className="col-header">Last activity</th>
             </tr>
           </thead>
           <tbody>

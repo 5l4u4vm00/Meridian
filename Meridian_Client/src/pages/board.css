@@ -1,26 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap');
-
 :root {
-  --paper: #f4efe6;
-  --paper-2: #ebe4d6;
-  --card: #faf6ec;
-  --ink: #1a1a1a;
-  --ink-80: #2d2d2d;
-  --ink-60: #5a5650;
-  --ink-40: #8a857c;
-  --ink-20: #c4bfb4;
-  --rule: #c4bfb4;
-  --rule-soft: #dcd5c6;
-  --accent: #c4511c;
-  --accent-soft: #e8d7c5;
-  --green: #2d4a3e;
-  --blue: #3d3d5c;
+  --paper: #0d1117;
+  --paper-2: #161b22;
+  --card: #161b22;
+  --ink: #e6edf3;
+  --ink-80: #c9d1d9;
+  --ink-60: #8b949e;
+  --ink-40: #6e7681;
+  --ink-20: #30363d;
+  --rule: #30363d;
+  --rule-soft: #21262d;
+  --accent: #2f81f7;
+  --accent-soft: rgba(56, 139, 253, 0.15);
+  --green: #3fb950;
+  --blue: #2f81f7;
+  --danger: #f85149;
+  --danger-soft: rgba(248, 81, 73, 0.15);
 }
 
 .pm-root * { box-sizing: border-box; }
 
 .pm-root {
-  font-family: 'Inter Tight', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   background: var(--paper);
   color: var(--ink);
   min-height: 100vh;
@@ -29,17 +29,17 @@
   line-height: 1.5;
   display: grid;
   grid-template-columns: 232px 1fr 296px;
-  background-image: radial-gradient(circle at 1px 1px, rgba(26, 26, 26, 0.035) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(230, 237, 243, 0.035) 1px, transparent 0);
   background-size: 24px 24px;
 }
 
-.serif { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
-.mono { font-family: 'JetBrains Mono', monospace; }
+.serif { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; font-optical-sizing: auto; }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
 
 /* ======= SIDEBAR ======= */
 .sidebar {
   border-right: 1px solid var(--rule);
-  padding: 22px 18px;
+  padding: 28px 22px;
   background: var(--paper);
   position: sticky;
   top: 0;
@@ -48,23 +48,23 @@
 }
 .brand { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
 .brand-mark {
-  font-family: 'Fraunces', serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   font-weight: 500;
   font-size: 26px;
   letter-spacing: -0.02em;
   font-style: italic;
 }
 .brand-sub {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9px;
   letter-spacing: 0.2em;
   color: var(--ink-60);
   text-transform: uppercase;
 }
-.brand-rule { height: 1px; background: var(--ink); margin: 18px 0 22px; }
+.brand-rule { height: 1px; background: var(--ink); margin: 22px 0 28px; }
 
 .section-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -76,7 +76,7 @@
 }
 .section-label-num {
   font-style: italic;
-  font-family: 'Fraunces', serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   letter-spacing: 0;
   font-size: 11px;
 }
@@ -86,7 +86,7 @@
   margin-right: 12px;
 }
 .section-label-link {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -113,7 +113,7 @@
 .nav-item.active { background: var(--ink); color: var(--paper); }
 .nav-item .count {
   margin-left: auto;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-40);
 }
@@ -132,24 +132,24 @@
 .project-row.active { background: var(--paper-2); }
 .project-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .project-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-40);
   margin-left: auto;
 }
 .project-name { font-size: 13px; }
 
-.sidebar-section { margin-bottom: 24px; }
+.sidebar-section { margin-bottom: 28px; }
 
 /* ======= MAIN ======= */
 .main { min-width: 0; display: flex; flex-direction: column; }
 
 .topbar {
   border-bottom: 1px solid var(--rule);
-  padding: 16px 28px;
+  padding: 22px 36px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   background: var(--paper);
 }
 .search {
@@ -172,7 +172,7 @@
 }
 .search input::placeholder { color: var(--ink-40); }
 .search kbd {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   padding: 2px 6px;
   background: var(--paper);
@@ -207,7 +207,7 @@
   background: var(--paper-2);
   border: 1.5px solid var(--paper);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9.5px;
   font-weight: 500;
   color: var(--ink);
@@ -226,13 +226,13 @@
   border-radius: 2px;
   padding: 12px;
   min-width: 220px;
-  box-shadow: 2px 3px 0 rgba(26, 26, 26, 0.08);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
   z-index: 20;
 }
 .menu-head { margin-bottom: 10px; }
 .menu-name { font-size: 13px; font-weight: 500; }
 .menu-email {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-60);
 }
@@ -255,7 +255,7 @@
 
 /* ======= PROJECT HEADER ======= */
 .project-header {
-  padding: 32px 28px 22px;
+  padding: 42px 36px 30px;
   border-bottom: 1px solid var(--rule);
   display: grid;
   grid-template-columns: 1fr auto;
@@ -263,7 +263,7 @@
   align-items: end;
 }
 .breadcrumb {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -274,7 +274,7 @@
   gap: 6px;
 }
 .project-title {
-  font-family: 'Fraunces', serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   font-size: 54px;
   font-weight: 400;
   letter-spacing: -0.03em;
@@ -286,10 +286,10 @@
   font-weight: 300;
   color: var(--accent);
 }
-.project-meta { display: flex; gap: 24px; margin-top: 14px; }
+.project-meta { display: flex; gap: 32px; margin-top: 18px; }
 .meta-item { display: flex; flex-direction: column; gap: 2px; }
 .meta-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -299,10 +299,10 @@
 
 /* ======= TOOLBAR ======= */
 .toolbar {
-  padding: 12px 28px;
+  padding: 16px 36px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   background: var(--paper);
   border-bottom: 1px solid var(--rule-soft);
 }
@@ -318,7 +318,7 @@
 }
 .chip:hover { border-color: var(--ink); }
 .toolbar-stamp {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-40);
   letter-spacing: 0.1em;
@@ -328,13 +328,13 @@
 .board {
   flex: 1;
   overflow-x: auto;
-  padding: 20px 28px 40px;
+  padding: 28px 36px 56px;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 300px;
-  gap: 18px;
+  grid-auto-columns: 320px;
+  gap: 24px;
 }
-.column { display: flex; flex-direction: column; gap: 10px; min-height: 200px; }
+.column { display: flex; flex-direction: column; gap: 14px; min-height: 200px; }
 .column.drag-over {
   background: linear-gradient(var(--paper-2), var(--paper-2)) padding-box;
   border-radius: 4px;
@@ -345,18 +345,18 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 6px 4px 10px;
+  padding: 8px 4px 14px;
   border-bottom: 1px solid var(--ink);
 }
 .column-title {
-  font-family: 'Fraunces', serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   font-size: 20px;
   font-weight: 400;
   letter-spacing: -0.01em;
 }
 .column-title em { font-style: italic; color: var(--accent); }
 .column-count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-60);
 }
@@ -365,16 +365,16 @@
   background: var(--card);
   border: 1px solid var(--rule-soft);
   border-radius: 3px;
-  padding: 13px 14px;
+  padding: 16px 18px;
   cursor: grab;
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   position: relative;
-  box-shadow: 0 1px 0 rgba(26, 26, 26, 0.02);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
 }
 .card:hover {
   border-color: var(--ink);
   transform: translateY(-1px);
-  box-shadow: 2px 3px 0 rgba(26, 26, 26, 0.08);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
 }
 .card:active { cursor: grabbing; }
 .card-top {
@@ -384,7 +384,7 @@
   margin-bottom: 8px;
 }
 .card-id {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9.5px;
   letter-spacing: 0.05em;
   color: var(--ink-40);
@@ -407,19 +407,19 @@
   transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease;
 }
 .card:hover .card-edit-btn { opacity: 1; }
-.card-edit-btn:hover { color: var(--ink); background: rgba(26, 26, 26, 0.06); }
+.card-edit-btn:hover { color: var(--ink); background: rgba(230, 237, 243, 0.08); }
 .card-title {
-  font-family: 'Fraunces', serif;
-  font-size: 15.5px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-size: 16.5px;
   font-weight: 400;
   line-height: 1.35;
   letter-spacing: -0.005em;
   color: var(--ink);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 11px; }
 .card-tag {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -433,18 +433,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px dashed var(--rule-soft);
 }
 .card-footer-left {
   display: flex; align-items: center; gap: 10px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-60);
 }
 .card-footer-left span { display: inline-flex; align-items: center; gap: 3px; }
 .card-due {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-80);
   letter-spacing: 0.03em;
@@ -455,7 +455,7 @@
   border: 1px dashed var(--ink-20);
   border-radius: 3px;
   padding: 10px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -473,7 +473,7 @@
 /* ======= RIGHT PANEL ======= */
 .right-panel {
   border-left: 1px solid var(--rule);
-  padding: 22px 20px;
+  padding: 28px 26px;
   background: var(--paper);
   position: sticky;
   top: 0;
@@ -481,7 +481,7 @@
   overflow-y: auto;
 }
 .panel-title {
-  font-family: 'Fraunces', serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   font-style: italic;
   font-size: 22px;
   font-weight: 400;
@@ -489,12 +489,12 @@
   margin-bottom: 3px;
 }
 .panel-date {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-40);
   letter-spacing: 0.1em;
 }
-.panel-rule { height: 1px; background: var(--ink); margin: 18px 0; }
+.panel-rule { height: 1px; background: var(--ink); margin: 24px 0; }
 
 .stat-grid {
   display: grid;
@@ -502,11 +502,11 @@
   gap: 1px;
   background: var(--rule);
   border: 1px solid var(--rule);
-  margin-bottom: 22px;
+  margin-bottom: 28px;
 }
-.stat { background: var(--paper); padding: 14px 12px; }
+.stat { background: var(--paper); padding: 18px 14px; }
 .stat-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -514,7 +514,7 @@
   margin-bottom: 4px;
 }
 .stat-value {
-  font-family: 'Fraunces', serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   font-size: 28px;
   font-weight: 400;
   letter-spacing: -0.02em;
@@ -533,14 +533,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 0;
+  padding: 11px 0;
   border-bottom: 1px dashed var(--rule-soft);
 }
 .team-row:last-of-type { border-bottom: none; }
 .team-info { flex: 1; min-width: 0; }
 .team-name { font-size: 12.5px; color: var(--ink); }
 .team-role {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -556,7 +556,7 @@
 .load-fill { height: 100%; background: var(--ink); border-radius: 2px; }
 .load-fill.high { background: var(--accent); }
 .load-pct {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-60);
   min-width: 26px;
@@ -567,7 +567,7 @@
 .activity-item {
   display: flex;
   gap: 10px;
-  padding: 9px 0;
+  padding: 11px 0;
   font-size: 12px;
   line-height: 1.4;
   border-bottom: 1px dashed var(--rule-soft);
@@ -578,7 +578,7 @@
   border-radius: 50%;
   background: var(--paper-2);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 8.5px;
   font-weight: 500;
   flex-shrink: 0;
@@ -587,12 +587,12 @@
 .activity-text { flex: 1; color: var(--ink-80); }
 .activity-text strong { font-weight: 500; color: var(--ink); }
 .activity-text .mono-tag {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--accent);
 }
 .activity-time {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 10px;
   color: var(--ink-40);
   flex-shrink: 0;
@@ -602,7 +602,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(26, 26, 26, 0.4);
+  background: rgba(0, 0, 0, 0.55);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -614,7 +614,7 @@
   border-radius: 3px;
   width: 420px;
   max-width: 92vw;
-  box-shadow: 4px 6px 0 rgba(26, 26, 26, 0.08);
+  box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.4);
 }
 .modal-head {
   display: flex;
@@ -646,7 +646,7 @@
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
 .field-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 9px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -677,8 +677,8 @@
 .color-swatch.selected { border-color: var(--ink); }
 .form-error {
   font-size: 12px;
-  color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--danger);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   letter-spacing: 0.05em;
 }
 .modal-actions {
@@ -694,12 +694,12 @@
   min-height: 100vh;
   background: var(--paper);
   color: var(--ink);
-  font-family: 'Inter Tight', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background-image: radial-gradient(circle at 1px 1px, rgba(26, 26, 26, 0.035) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(230, 237, 243, 0.035) 1px, transparent 0);
   background-size: 24px 24px;
 }
 .board-empty > div { max-width: 440px; }
@@ -728,7 +728,7 @@
   cursor: pointer;
   z-index: 60;
   max-width: 320px;
-  box-shadow: 2px 3px 0 rgba(26, 26, 26, 0.15);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
 }
 
 .pm-root .board::-webkit-scrollbar,
@@ -758,7 +758,7 @@
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 18, 14, 0.32);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: flex-end;
   z-index: 60;
@@ -770,7 +770,7 @@
   border-left: 1px solid var(--ink-20);
   display: flex;
   flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.08);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
 }
 .drawer-head {
   padding: 20px 24px 16px;
@@ -795,8 +795,8 @@
 .drawer-error {
   margin: 12px 24px 0;
   padding: 8px 12px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--danger-soft);
+  color: var(--danger);
   font-size: 12px;
   border-radius: 4px;
 }
