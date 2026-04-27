@@ -107,39 +107,6 @@
   border-color: var(--ink);
 }
 
-.sort-select {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--ink-20);
-  border-radius: 6px;
-  padding: 6px 10px;
-  color: var(--ink-60);
-  background: transparent;
-  position: relative;
-}
-
-.sort-select .sort-label {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-}
-
-.sort-select select {
-  appearance: none;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--ink-80);
-  padding-right: 4px;
-  cursor: pointer;
-}
-
 .projects-error {
   color: var(--danger);
   font-size: 13px;
@@ -176,7 +143,6 @@
 .projects-table thead th {
   text-align: center;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-40);
@@ -224,6 +190,35 @@
   color: var(--ink);
 }
 
+.projects-table .col-header.sortable {
+  cursor: pointer;
+  user-select: none;
+  color: var(--ink-40);
+  transition: color 0.15s ease;
+}
+
+.projects-table .col-header.sortable .col-header-label {
+  vertical-align: middle;
+}
+
+.projects-table .col-header.sortable svg {
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.projects-table .col-header.sortable:hover {
+  color: var(--ink);
+}
+
+.projects-table .col-header.sortable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.projects-table .col-header.sortable.active {
+  color: var(--ink);
+}
+
 .projects-table .col-name {
   width: 220px;
 }
@@ -233,8 +228,7 @@
 
 .projects-table .col-tasks {
   width: 80px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  color: var(--ink-60);
+  color: var(--ink);
 }
 
 .projects-table thead th.col-tasks {
@@ -245,7 +239,7 @@
   width: 120px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   letter-spacing: 0.05em;
-  color: var(--ink-40);
+  color: var(--ink);
 }
 
 .progress {
@@ -269,14 +263,12 @@
   display: inline-block;
   vertical-align: middle;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 11px;
-  color: var(--ink-40);
+  color: var(--ink);
   letter-spacing: 0.04em;
 }
 
 .project-card-code {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 11px;
   letter-spacing: 0.08em;
-  color: var(--ink-40);
+  color: var(--ink);
 }

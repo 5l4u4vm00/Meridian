@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, Plus, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Search } from 'lucide-react'
 import {
   createProject as apiCreateProject,
   listProjects as apiListProjects,
@@ -17,28 +17,66 @@ const FILTERS = [
   { key: 'empty', label: 'Empty' },
 ]
 
-const SORTS = [
-  { key: 'recent', label: 'Recent activity' },
-  { key: 'name', label: 'Name' },
-  { key: 'code', label: 'Code' },
-  { key: 'tasks', label: 'Tasks' },
-]
+const DEFAULT_SORT_DIR = {
+  name: 'asc',
+  code: 'asc',
+  tasks: 'desc',
+  recent: 'desc',
+}
 
-function compareProjects(a, b, key) {
+function SortableHeader({ label, sortValue, sortKey, sortDir, onSort }) {
+  const active = sortKey === sortValue
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onSort(sortValue)
+    }
+  }
+  const ariaSort = active
+    ? sortDir === 'asc'
+      ? 'ascending'
+      : 'descending'
+    : 'none'
+  return (
+    <th
+      className={`col-header sortable${active ? ' active' : ''}`}
+      role="button"
+      tabIndex={0}
+      aria-sort={ariaSort}
+      onClick={() => onSort(sortValue)}
+      onKeyDown={handleKeyDown}
+    >
+      <span className="col-header-label">{label}</span>
+      {active &&
+        (sortDir === 'asc' ? (
+          <ChevronUp size={12} strokeWidth={1.5} />
+        ) : (
+          <ChevronDown size={12} strokeWidth={1.5} />
+        ))}
+    </th>
+  )
+}
+
+function compareProjects(a, b, key, dir) {
+  let cmp
   switch (key) {
     case 'name':
-      return a.name.localeCompare(b.name)
+      cmp = a.name.localeCompare(b.name)
+      break
     case 'code':
-      return a.code.localeCompare(b.code)
+      cmp = a.code.localeCompare(b.code)
+      break
     case 'tasks':
-      return (b.task_count ?? 0) - (a.task_count ?? 0)
+      cmp = (a.task_count ?? 0) - (b.task_count ?? 0)
+      break
     case 'recent':
     default: {
       const ta = a.last_activity ? new Date(a.last_activity).getTime() : 0
       const tb = b.last_activity ? new Date(b.last_activity).getTime() : 0
-      return tb - ta
+      cmp = ta - tb
     }
   }
+  return dir === 'desc' ? -cmp : cmp
 }
 
 function matchesFilter(p, filter) {
@@ -58,6 +96,7 @@ export default function ProjectsPage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [sortKey, setSortKey] = useState('recent')
+  const [sortDir, setSortDir] = useState(DEFAULT_SORT_DIR.recent)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showNewProject, setShowNewProject] = useState(false)
@@ -89,14 +128,25 @@ export default function ProjectsPage() {
         p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)
       )
     })
-    const sorted = [...filtered].sort((a, b) => compareProjects(a, b, sortKey))
+    const sorted = [...filtered].sort((a, b) =>
+      compareProjects(a, b, sortKey, sortDir),
+    )
     return sorted
-  }, [projects, query, filter, sortKey])
+  }, [projects, query, filter, sortKey, sortDir])
 
   const activeCount = useMemo(
     () => projects.filter((p) => (p.open_count ?? 0) > 0).length,
     [projects],
   )
+
+  const handleSort = (key) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(DEFAULT_SORT_DIR[key] ?? 'asc')
+    }
+  }
 
   const openProject = (code) => {
     navigate('/board', { state: { code } })
@@ -172,20 +222,6 @@ export default function ProjectsPage() {
             </button>
           ))}
         </div>
-        <label className="sort-select">
-          <span className="sort-label">Sort</span>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value)}
-          >
-            {SORTS.map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={12} strokeWidth={1.5} />
-        </label>
       </section>
 
       {error && <div className="projects-error">{error}</div>}
@@ -222,11 +258,35 @@ export default function ProjectsPage() {
         <table className="projects-table">
           <thead>
             <tr>
-              <th className="col-header">Code</th>
-              <th className="col-header">Name</th>
+              <SortableHeader
+                label="Code"
+                sortValue="code"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Name"
+                sortValue="name"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
               <th className="col-header">Progress</th>
-              <th className="col-header">Tasks</th>
-              <th className="col-header">Last activity</th>
+              <SortableHeader
+                label="Tasks"
+                sortValue="tasks"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Last activity"
+                sortValue="recent"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
             </tr>
           </thead>
           <tbody>
