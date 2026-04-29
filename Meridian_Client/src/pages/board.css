@@ -361,6 +361,27 @@
   font-size: 10px;
   color: var(--ink-60);
 }
+.column-head-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.column-sort {
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: 10.5px;
+  font-family: inherit;
+  padding: 3px 18px 3px 7px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--paper)
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'><path d='M1 1l3 3 3-3' fill='none' stroke='%23888' stroke-width='1'/></svg>")
+    no-repeat right 5px center;
+  color: var(--ink-80);
+  cursor: pointer;
+}
+.column-sort:hover { border-color: var(--ink); }
+.column-sort:focus { outline: none; border-color: var(--ink); }
 
 .card {
   background: var(--card);

@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowUpRight,
   ChevronRight,
-  Filter,
   LogOut,
   MoreHorizontal,
   Plus,
@@ -35,6 +34,24 @@ import {
 import './board.css'
 
 const STATUS_ORDER = ['backlog', 'in_progress', 'in_review', 'shipped']
+const PRIORITY_RANK = { high: 3, medium: 2, low: 1 }
+function sortTasks(tasks, mode) {
+  if (!mode) return tasks
+  const copy = [...tasks]
+  if (mode === 'priority') {
+    copy.sort((a, b) => (PRIORITY_RANK[b.priority] ?? 0) - (PRIORITY_RANK[a.priority] ?? 0))
+  } else if (mode === 'due') {
+    copy.sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+      return a.due_date.localeCompare(b.due_date)
+    })
+  } else if (mode === 'title') {
+    copy.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+  }
+  return copy
+}
 const STATUS_LABEL = {
   backlog: 'Backlog',
   in_progress: 'In Progress',
@@ -227,6 +244,7 @@ export default function BoardPage() {
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [editTaskId, setEditTaskId] = useState(null)
   const [search, setSearch] = useState('')
+  const [columnSorts, setColumnSorts] = useState({})
 
   const activeProject = useMemo(
     () => projects.find((p) => p.code === activeCode) || null,
@@ -556,13 +574,10 @@ export default function BoardPage() {
           </div>
         </div>
 
-        <div className="toolbar">
-          <button className="chip">Sort: Priority</button>
-          <div style={{ flex: 1 }} />
-        </div>
-
         <div className="board">
-          {visibleColumns.map((col) => (
+          {visibleColumns.map((col) => {
+            const sortedTasks = sortTasks(col.tasks, columnSorts[col.status])
+            return (
             <div
               key={col.status}
               className={`column ${dragOverStatus === col.status ? 'drag-over' : ''}`}
@@ -574,12 +589,30 @@ export default function BoardPage() {
                 <div className="column-title">
                   <ColumnTitle title={STATUS_LABEL[col.status]} />
                 </div>
-                <span className="column-count">
-                  {String(col.tasks.length).padStart(2, '0')}
-                </span>
+                <div className="column-head-meta">
+                  <select
+                    className="column-sort"
+                    value={columnSorts[col.status] || ''}
+                    onChange={(e) =>
+                      setColumnSorts((prev) => ({
+                        ...prev,
+                        [col.status]: e.target.value || undefined,
+                      }))
+                    }
+                    aria-label={`Sort ${STATUS_LABEL[col.status]}`}
+                  >
+                    <option value="">Sort</option>
+                    <option value="priority">Priority</option>
+                    <option value="due">Due date</option>
+                    <option value="title">Title</option>
+                  </select>
+                  <span className="column-count">
+                    {String(col.tasks.length).padStart(2, '0')}
+                  </span>
+                </div>
               </div>
 
-              {col.tasks.map((task) => (
+              {sortedTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -597,7 +630,8 @@ export default function BoardPage() {
                 + Add Task
               </button>
             </div>
-          ))}
+            )
+          })}
         </div>
       </main>
 
