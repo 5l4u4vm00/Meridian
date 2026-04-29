@@ -458,14 +458,14 @@ export default function BoardPage() {
   const q = search.trim().toLowerCase()
   const visibleColumns = q
     ? columns.map((c) => ({
-        ...c,
-        tasks: c.tasks.filter(
-          (t) =>
-            t.title?.toLowerCase().includes(q) ||
-            t.code?.toLowerCase().includes(q) ||
-            t.tags?.some((tag) => tag.toLowerCase().includes(q)),
-        ),
-      }))
+      ...c,
+      tasks: c.tasks.filter(
+        (t) =>
+          t.title?.toLowerCase().includes(q) ||
+          t.code?.toLowerCase().includes(q) ||
+          t.tags?.some((tag) => tag.toLowerCase().includes(q)),
+      ),
+    }))
     : columns
 
   return (
@@ -490,7 +490,6 @@ export default function BoardPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <kbd>⌘K</kbd>
           </div>
           <div style={{ flex: 1 }} />
           <button className="btn primary" onClick={() => setNewTaskStatus('backlog')}>
@@ -558,10 +557,6 @@ export default function BoardPage() {
         </div>
 
         <div className="toolbar">
-          <button className="chip">
-            <Filter size={11} strokeWidth={1.5} /> Filter
-          </button>
-          <button className="chip">Group: Status</button>
           <button className="chip">Sort: Priority</button>
           <div style={{ flex: 1 }} />
         </div>

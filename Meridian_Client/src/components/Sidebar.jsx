@@ -35,36 +35,11 @@ export default function Sidebar({
 
       <div className="sidebar-section">
         <div className="section-label">
-          <span>Workspace</span>
-          <span className="section-label-num">i.</span>
-        </div>
-        {WORKSPACE_ITEMS.map((item) => {
-          const isActive = activeKey === item.key
-          const className = `nav-item${isActive ? ' active' : ''}`
-          if (item.to) {
-            return (
-              <Link key={item.key} to={item.to} className={className}>
-                <item.icon size={14} strokeWidth={1.5} />
-                <span>{item.label}</span>
-              </Link>
-            )
-          }
-          return (
-            <div key={item.key} className={className}>
-              <item.icon size={14} strokeWidth={1.5} />
-              <span>{item.label}</span>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="sidebar-section">
-        <div className="section-label">
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <span>Projects</span>
             <Link to="/" className="section-label-link">All</Link>
           </span>
-          <span className="section-label-num">ii.</span>
+          <span className="section-label-num">i.</span>
         </div>
         {projects.map((p) => {
           const active =
@@ -98,7 +73,7 @@ export default function Sidebar({
       <div className="sidebar-section">
         <div className="section-label">
           <span>Library</span>
-          <span className="section-label-num">iii.</span>
+          <span className="section-label-num">ii.</span>
         </div>
         {[
           { icon: Users, label: 'Team' },
