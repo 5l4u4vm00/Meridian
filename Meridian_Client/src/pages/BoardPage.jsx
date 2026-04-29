@@ -501,14 +501,6 @@ export default function BoardPage() {
           <Link to="/" className="btn back-btn">
             <ArrowLeft size={13} strokeWidth={1.8} /> Projects
           </Link>
-          <div className="search">
-            <Search size={14} strokeWidth={1.5} color="var(--ink-60)" />
-            <input
-              placeholder="Search tasks, projects, people…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
           <div style={{ flex: 1 }} />
           <button className="btn primary" onClick={() => setNewTaskStatus('backlog')}>
             <Plus size={13} strokeWidth={1.8} /> New task
@@ -574,62 +566,73 @@ export default function BoardPage() {
           </div>
         </div>
 
+        <div className="board-toolbar">
+          <div className="search">
+            <Search size={14} strokeWidth={1.5} color="var(--ink-60)" />
+            <input
+              placeholder="Search tasks"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="board">
           {visibleColumns.map((col) => {
             const sortedTasks = sortTasks(col.tasks, columnSorts[col.status])
             return (
-            <div
-              key={col.status}
-              className={`column ${dragOverStatus === col.status ? 'drag-over' : ''}`}
-              onDragOver={(e) => onColumnDragOver(e, col.status)}
-              onDragLeave={() => setDragOverStatus(null)}
-              onDrop={(e) => onColumnDrop(e, col.status)}
-            >
-              <div className="column-head">
-                <div className="column-title">
-                  <ColumnTitle title={STATUS_LABEL[col.status]} />
-                </div>
-                <div className="column-head-meta">
-                  <select
-                    className="column-sort"
-                    value={columnSorts[col.status] || ''}
-                    onChange={(e) =>
-                      setColumnSorts((prev) => ({
-                        ...prev,
-                        [col.status]: e.target.value || undefined,
-                      }))
-                    }
-                    aria-label={`Sort ${STATUS_LABEL[col.status]}`}
-                  >
-                    <option value="">Sort</option>
-                    <option value="priority">Priority</option>
-                    <option value="due">Due date</option>
-                    <option value="title">Title</option>
-                  </select>
-                  <span className="column-count">
-                    {String(col.tasks.length).padStart(2, '0')}
-                  </span>
-                </div>
-              </div>
-
-              {sortedTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onDragStart={onDragStart}
-                  isDragging={draggingId === task.id}
-                  onOpen={(id) => setDetailTaskId(id)}
-                  onEdit={(id) => setEditTaskId(id)}
-                />
-              ))}
-
-              <button
-                className="add-card"
-                onClick={() => setNewTaskStatus(col.status)}
+              <div
+                key={col.status}
+                className={`column ${dragOverStatus === col.status ? 'drag-over' : ''}`}
+                onDragOver={(e) => onColumnDragOver(e, col.status)}
+                onDragLeave={() => setDragOverStatus(null)}
+                onDrop={(e) => onColumnDrop(e, col.status)}
               >
-                + Add Task
-              </button>
-            </div>
+                <div className="column-head">
+                  <div className="column-title">
+                    <ColumnTitle title={STATUS_LABEL[col.status]} />
+                  </div>
+                  <div className="column-head-meta">
+                    <select
+                      className="column-sort"
+                      value={columnSorts[col.status] || ''}
+                      onChange={(e) =>
+                        setColumnSorts((prev) => ({
+                          ...prev,
+                          [col.status]: e.target.value || undefined,
+                        }))
+                      }
+                      aria-label={`Sort ${STATUS_LABEL[col.status]}`}
+                    >
+                      <option value="">Sort</option>
+                      <option value="priority">Priority</option>
+                      <option value="due">Due date</option>
+                      <option value="title">Title</option>
+                    </select>
+                    <span className="column-count">
+                      {String(col.tasks.length).padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+
+                {sortedTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onDragStart={onDragStart}
+                    isDragging={draggingId === task.id}
+                    onOpen={(id) => setDetailTaskId(id)}
+                    onEdit={(id) => setEditTaskId(id)}
+                  />
+                ))}
+
+                <button
+                  className="add-card"
+                  onClick={() => setNewTaskStatus(col.status)}
+                >
+                  + Add Task
+                </button>
+              </div>
             )
           })}
         </div>
