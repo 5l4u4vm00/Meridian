@@ -1,27 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Archive,
   ArrowLeft,
   ArrowUpRight,
-  Calendar,
   ChevronRight,
   Filter,
-  Inbox,
-  Layers,
   LogOut,
   MoreHorizontal,
   Plus,
   Search,
-  Settings,
-  TrendingUp,
-  Users,
 } from 'lucide-react'
 import TaskCard from '../components/board/TaskCard'
 import TaskDrawer from '../components/board/TaskDrawer'
+import EditTaskDialog from '../components/board/EditTaskDialog'
 import Modal from '../components/Modal'
 import NewProjectDialog from '../components/NewProjectDialog'
-import { DEFAULT_PROJECT_COLORS } from '../components/projectColors'
+import Sidebar from '../components/Sidebar'
 import { relativeTime } from '../utils/time'
 import { useAuth } from '../auth/useAuth'
 import {
@@ -30,10 +24,8 @@ import {
 } from '../api/projects'
 import {
   createTask as apiCreateTask,
-  getTaskDetail as apiGetTaskDetail,
   listBoard as apiListBoard,
   moveTask as apiMoveTask,
-  updateTask as apiUpdateTask,
 } from '../api/tasks'
 import {
   getActivity as apiGetActivity,
@@ -213,157 +205,6 @@ function NewTaskDialog({ initialStatus, onClose, onCreate }) {
   )
 }
 
-function EditTaskDialog({ taskId, onClose, onSave }) {
-  const [loading, setLoading] = useState(true)
-  const [original, setOriginal] = useState(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState('medium')
-  const [dueDate, setDueDate] = useState('')
-  const [tags, setTags] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState(null)
-
-  const today = toDateInputValue(new Date())
-
-  useEffect(() => {
-    let cancelled = false
-    apiGetTaskDetail(taskId)
-      .then((detail) => {
-        if (cancelled) return
-        const t = detail.task
-        setOriginal(t)
-        setTitle(t.title || '')
-        setDescription(t.description || '')
-        setPriority(t.priority || 'medium')
-        setDueDate(t.due_date ? t.due_date.slice(0, 10) : '')
-        setTags((t.tags || []).join(', '))
-        setLoading(false)
-      })
-      .catch((e) => {
-        if (cancelled) return
-        setError(e.message || 'Failed to load task')
-        setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [taskId])
-
-  const submit = async (e) => {
-    e.preventDefault()
-    if (!original) return
-    setError(null)
-    if (dueDate && dueDate < today && dueDate !== (original.due_date || '').slice(0, 10)) {
-      setError('Due date cannot be earlier than today')
-      return
-    }
-
-    const payload = {}
-    const trimmedTitle = title.trim()
-    if (trimmedTitle !== original.title) payload.title = trimmedTitle
-    if (description !== (original.description || '')) payload.description = description
-    if (priority !== original.priority) payload.priority = priority
-    const origDue = original.due_date ? original.due_date.slice(0, 10) : ''
-    if (dueDate !== origDue) payload.due_date = dueDate || null
-    const nextTags = tags
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean)
-    const origTags = original.tags || []
-    const tagsChanged =
-      nextTags.length !== origTags.length ||
-      nextTags.some((t, i) => t !== origTags[i])
-    if (tagsChanged) payload.tags = nextTags
-
-    if (Object.keys(payload).length === 0) {
-      onClose()
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      await apiUpdateTask(taskId, payload)
-      await onSave?.()
-      onClose()
-    } catch (err) {
-      setError(err.message || 'Failed to update task')
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Modal title="Edit task" onClose={onClose}>
-      {loading ? (
-        <div className="modal-body" style={{ color: 'var(--ink-60)' }}>Loading…</div>
-      ) : (
-        <form onSubmit={submit} className="modal-body">
-          <label className="field">
-            <span className="field-label">Title</span>
-            <input
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">Description</span>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-            />
-          </label>
-          <div className="field-row">
-            <label className="field">
-              <span className="field-label">Priority</span>
-              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
-            <label className="field">
-              <span className="field-label">Due date</span>
-              <input
-                type="date"
-                value={dueDate}
-                onClick={(e) => {
-                  if (typeof e.currentTarget.showPicker === 'function') {
-                    try {
-                      e.currentTarget.showPicker()
-                    } catch {
-                      // browser refused — ignore
-                    }
-                  }
-                }}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </label>
-          </div>
-          <label className="field">
-            <span className="field-label">Tags (comma-separated)</span>
-            <input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="identity, review"
-            />
-          </label>
-          {error && <div className="form-error">{error}</div>}
-          <div className="modal-actions">
-            <button type="button" className="btn" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn primary" disabled={submitting}>
-              {submitting ? 'Saving…' : 'Update task'}
-            </button>
-          </div>
-        </form>
-      )}
-    </Modal>
-  )
-}
 
 export default function BoardPage() {
   const { user, logout } = useAuth()
@@ -385,6 +226,7 @@ export default function BoardPage() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [editTaskId, setEditTaskId] = useState(null)
+  const [search, setSearch] = useState('')
 
   const activeProject = useMemo(
     () => projects.find((p) => p.code === activeCode) || null,
@@ -613,81 +455,28 @@ export default function BoardPage() {
   }
 
   const columns = board?.columns || STATUS_ORDER.map((status) => ({ status, tasks: [] }))
+  const q = search.trim().toLowerCase()
+  const visibleColumns = q
+    ? columns.map((c) => ({
+        ...c,
+        tasks: c.tasks.filter(
+          (t) =>
+            t.title?.toLowerCase().includes(q) ||
+            t.code?.toLowerCase().includes(q) ||
+            t.tags?.some((tag) => tag.toLowerCase().includes(q)),
+        ),
+      }))
+    : columns
 
   return (
     <div className="pm-root">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">Meridian</span>
-        </div>
-        <div className="brand-sub">A Project Studio</div>
-        <div className="brand-rule" />
-
-        <div className="sidebar-section">
-          <div className="section-label">
-            <span>Workspace</span>
-            <span className="section-label-num">i.</span>
-          </div>
-          {[
-            { icon: Inbox, label: 'Inbox', count: null },
-            { icon: Layers, label: 'My Tasks', count: null },
-            { icon: Calendar, label: 'Calendar', count: null },
-            { icon: TrendingUp, label: 'Insights', count: null },
-          ].map((item) => (
-            <div key={item.label} className="nav-item">
-              <item.icon size={14} strokeWidth={1.5} />
-              <span>{item.label}</span>
-              {item.count !== null && <span className="count">{item.count}</span>}
-            </div>
-          ))}
-        </div>
-
-        <div className="sidebar-section">
-          <div className="section-label">
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <span>Projects</span>
-              <Link to="/" className="section-label-link">All</Link>
-            </span>
-            <span className="section-label-num">ii.</span>
-          </div>
-          {projects.map((p) => (
-            <div
-              key={p.id}
-              className={`project-row ${activeCode === p.code ? 'active' : ''}`}
-              onClick={() => setActiveCode(p.code)}
-            >
-              <div className="project-dot" style={{ background: p.color }} />
-              <span className="project-name">{p.name}</span>
-              <span className="project-code">{p.code}</span>
-            </div>
-          ))}
-          <div
-            className="nav-item"
-            style={{ color: 'var(--ink-40)', marginTop: 4, cursor: 'pointer' }}
-            onClick={() => setShowNewProject(true)}
-          >
-            <Plus size={13} strokeWidth={1.5} />
-            <span style={{ fontSize: 12 }}>New project</span>
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <div className="section-label">
-            <span>Library</span>
-            <span className="section-label-num">iii.</span>
-          </div>
-          {[
-            { icon: Users, label: 'Team' },
-            { icon: Archive, label: 'Archive' },
-            { icon: Settings, label: 'Settings' },
-          ].map((item) => (
-            <div key={item.label} className="nav-item">
-              <item.icon size={14} strokeWidth={1.5} />
-              <span>{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </aside>
+      <Sidebar
+        activeKey="project"
+        projects={projects}
+        activeProjectCode={activeCode}
+        onSelectProject={(code) => setActiveCode(code)}
+        onNewProject={() => setShowNewProject(true)}
+      />
 
       <main className="main">
         <div className="topbar">
@@ -696,7 +485,11 @@ export default function BoardPage() {
           </Link>
           <div className="search">
             <Search size={14} strokeWidth={1.5} color="var(--ink-60)" />
-            <input placeholder="Search tasks, projects, people…" />
+            <input
+              placeholder="Search tasks, projects, people…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             <kbd>⌘K</kbd>
           </div>
           <div style={{ flex: 1 }} />
@@ -759,9 +552,6 @@ export default function BoardPage() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button className="btn">
-              Share <ArrowUpRight size={13} strokeWidth={1.5} />
-            </button>
-            <button className="btn">
               <MoreHorizontal size={13} strokeWidth={1.5} />
             </button>
           </div>
@@ -774,11 +564,10 @@ export default function BoardPage() {
           <button className="chip">Group: Status</button>
           <button className="chip">Sort: Priority</button>
           <div style={{ flex: 1 }} />
-          <span className="toolbar-stamp">LIVE · API</span>
         </div>
 
         <div className="board">
-          {columns.map((col) => (
+          {visibleColumns.map((col) => (
             <div
               key={col.status}
               className={`column ${dragOverStatus === col.status ? 'drag-over' : ''}`}
@@ -810,7 +599,7 @@ export default function BoardPage() {
                 className="add-card"
                 onClick={() => setNewTaskStatus(col.status)}
               >
-                + Add card
+                + Add Task
               </button>
             </div>
           ))}

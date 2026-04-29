@@ -2,6 +2,9 @@ import { apiFetch } from '../auth/apiClient'
 
 export const listBoard = (code) => apiFetch(`/projects/${code}/tasks`)
 
+export const listMyTasks = (includeShipped = false) =>
+  apiFetch(`/my-tasks?include_shipped=${includeShipped ? 'true' : 'false'}`)
+
 export const getTaskDetail = (id) => apiFetch(`/tasks/${id}/detail`)
 
 export const createTask = (code, payload) =>

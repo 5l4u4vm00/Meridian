@@ -72,6 +72,19 @@ def list_for_project(db: Session, project_id: int) -> list[Task]:
     )
 
 
+def list_for_assignee(
+    db: Session, user_id: int, *, include_shipped: bool = False
+) -> list[Task]:
+    stmt = select(Task).where(Task.assignee_id == user_id)
+    if not include_shipped:
+        stmt = stmt.where(Task.status != TaskStatus.shipped)
+    # NULL due_dates sort last; otherwise ascending due_date, then status, sort_key, id.
+    stmt = stmt.order_by(
+        Task.due_date.is_(None), Task.due_date, Task.status, Task.sort_key, Task.id
+    )
+    return list(db.scalars(stmt))
+
+
 def update(db: Session, task: Task, **changes) -> Task:
     for k, v in changes.items():
         setattr(task, k, v)

@@ -59,6 +59,14 @@ def list_tasks_for_project(db: Session, project_code: str) -> list[Task]:
     return task_repository.list_for_project(db, project.id)
 
 
+def list_tasks_for_user(
+    db: Session, user_id: int, *, include_shipped: bool = False
+) -> list[Task]:
+    return task_repository.list_for_assignee(
+        db, user_id, include_shipped=include_shipped
+    )
+
+
 def get_task(db: Session, task_id: int) -> Task:
     task = task_repository.get(db, task_id)
     if task is None:

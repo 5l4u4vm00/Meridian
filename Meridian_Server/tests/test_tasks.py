@@ -131,3 +131,76 @@ def test_assignee_initials_populated(client):
 def test_task_routes_require_auth(client):
     r = client.get("/projects/MRD/tasks")
     assert r.status_code == 401
+
+
+def test_my_tasks_returns_only_assigned_across_projects(client):
+    h_a = _auth(client, email="alice@x.co", name="Alice Smith")
+    me_a = client.get("/auth/me", headers=h_a).json()
+    h_b = _auth(client, email="bob@x.co", name="Bob Jones")
+    me_b = client.get("/auth/me", headers=h_b).json()
+
+    _make_project(client, h_a, code="MRD", name="Meridian")
+    _make_project(client, h_a, code="ATL", name="Atlas")
+
+    client.post(
+        "/projects/MRD/tasks",
+        json={"title": "Mine in MRD", "assignee_id": me_a["id"]},
+        headers=h_a,
+    )
+    client.post(
+        "/projects/ATL/tasks",
+        json={"title": "Mine in ATL", "assignee_id": me_a["id"]},
+        headers=h_a,
+    )
+    client.post(
+        "/projects/MRD/tasks",
+        json={"title": "Bob's task", "assignee_id": me_b["id"]},
+        headers=h_a,
+    )
+    client.post("/projects/MRD/tasks", json={"title": "Unassigned"}, headers=h_a)
+
+    rows = client.get("/my-tasks", headers=h_a).json()
+    titles = sorted(t["title"] for t in rows)
+    assert titles == ["Mine in ATL", "Mine in MRD"]
+    codes = {t["title"]: t["project_code"] for t in rows}
+    assert codes["Mine in MRD"] == "MRD"
+    assert codes["Mine in ATL"] == "ATL"
+    assert all("project_color" in t and "project_name" in t for t in rows)
+
+
+def test_my_tasks_excludes_shipped_by_default(client):
+    h = _auth(client)
+    me = client.get("/auth/me", headers=h).json()
+    _make_project(client, h)
+    open_t = client.post(
+        "/projects/MRD/tasks",
+        json={"title": "Open", "assignee_id": me["id"]},
+        headers=h,
+    ).json()
+    shipped_t = client.post(
+        "/projects/MRD/tasks",
+        json={"title": "Done", "assignee_id": me["id"]},
+        headers=h,
+    ).json()
+    client.post(
+        f"/tasks/{shipped_t['id']}/move", json={"status": "shipped"}, headers=h
+    )
+
+    default = client.get("/my-tasks", headers=h).json()
+    assert [t["title"] for t in default] == ["Open"]
+    assert default[0]["id"] == open_t["id"]
+
+    incl = client.get("/my-tasks?include_shipped=true", headers=h).json()
+    assert sorted(t["title"] for t in incl) == ["Done", "Open"]
+
+
+def test_my_tasks_empty_when_nothing_assigned(client):
+    h = _auth(client)
+    _make_project(client, h)
+    client.post("/projects/MRD/tasks", json={"title": "Unassigned"}, headers=h)
+    rows = client.get("/my-tasks", headers=h).json()
+    assert rows == []
+
+
+def test_my_tasks_requires_auth(client):
+    assert client.get("/my-tasks").status_code == 401

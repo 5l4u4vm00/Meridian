@@ -4,13 +4,33 @@ from sqlalchemy.orm import Session
 from ...models.user import User
 from ...schemas.attachment import AttachmentRead
 from ...schemas.comment import CommentRead
-from ...schemas.task import BoardColumn, BoardRead, TaskCreate, TaskMove, TaskRead, TaskUpdate
+from ...schemas.task import (
+    BoardColumn,
+    BoardRead,
+    MyTaskRead,
+    TaskCreate,
+    TaskMove,
+    TaskRead,
+    TaskUpdate,
+)
 from ...models.task import TaskStatus
 from ...services import attachment_service, comment_service, task_service
 from ...services.task_service import TaskError
 from ..deps import get_current_user, get_db
 
 router = APIRouter(tags=["tasks"])
+
+
+@router.get("/my-tasks", response_model=list[MyTaskRead])
+def list_my_tasks(
+    include_shipped: bool = False,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    tasks = task_service.list_tasks_for_user(
+        db, user.id, include_shipped=include_shipped
+    )
+    return [MyTaskRead.from_task(t) for t in tasks]
 
 
 @router.get("/projects/{code}/tasks", response_model=BoardRead)

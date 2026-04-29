@@ -92,3 +92,19 @@ class BoardColumn(BaseModel):
 
 class BoardRead(BaseModel):
     columns: list[BoardColumn]
+
+
+class MyTaskRead(TaskRead):
+    project_code: str
+    project_name: str
+    project_color: str
+
+    @classmethod
+    def from_task(cls, task) -> "MyTaskRead":
+        base = TaskRead.from_task(task)
+        return cls(
+            **base.model_dump(),
+            project_code=task.project.code if task.project else "",
+            project_name=task.project.name if task.project else "",
+            project_color=task.project.color if task.project else "",
+        )
