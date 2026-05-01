@@ -1,7 +1,7 @@
 import enum
 from datetime import date, datetime, timezone
 
-from sqlalchemy import JSON, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..core.db import Base
@@ -55,6 +55,9 @@ class Task(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, index=True
     )
 
     assignee = relationship("User", foreign_keys=[assignee_id], lazy="joined")

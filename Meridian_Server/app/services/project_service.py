@@ -57,3 +57,13 @@ def update_project(db: Session, code: str, payload: ProjectUpdate) -> Project:
 
 def task_count(db: Session, project_id: int) -> int:
     return project_repository.task_count(db, project_id)
+
+
+def delete_project(db: Session, code: str) -> None:
+    project = get_by_code(db, code)
+    project_repository.delete(db, project)
+
+
+def list_members(db: Session, code: str) -> list[dict]:
+    project = get_by_code(db, code)
+    return project_repository.list_members(db, project.id)

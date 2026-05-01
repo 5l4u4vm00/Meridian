@@ -8,6 +8,8 @@ import {
   MoreHorizontal,
   Plus,
   Search,
+  Trash2,
+  Users,
 } from 'lucide-react'
 import TaskCard from '../components/board/TaskCard'
 import TaskDrawer from '../components/board/TaskDrawer'
@@ -19,10 +21,14 @@ import { relativeTime } from '../utils/time'
 import { useAuth } from '../auth/useAuth'
 import {
   createProject as apiCreateProject,
+  deleteProject as apiDeleteProject,
+  listMembers as apiListMembers,
   listProjects as apiListProjects,
+  updateProject as apiUpdateProject,
 } from '../api/projects'
 import {
   createTask as apiCreateTask,
+  deleteTask as apiDeleteTask,
   listBoard as apiListBoard,
   moveTask as apiMoveTask,
 } from '../api/tasks'
@@ -80,13 +86,6 @@ function activityVerbPhrase(event) {
 }
 
 function ColumnTitle({ title }) {
-  if (title === 'In Progress') {
-    return (
-      <>
-        In <em>Progress</em>
-      </>
-    )
-  }
   if (title === 'Shipped') return <em>{title}</em>
   return title
 }
@@ -223,6 +222,133 @@ function NewTaskDialog({ initialStatus, onClose, onCreate }) {
 }
 
 
+function ChangeLeaderDialog({ projectCode, onClose, onSaved }) {
+  const [members, setMembers] = useState([])
+  const [leadId, setLeadId] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+      ; (async () => {
+        try {
+          const list = await apiListMembers(projectCode)
+          if (cancelled) return
+          setMembers(list)
+          const current = list.find((m) => m.role === 'lead')
+          if (current) setLeadId(String(current.id))
+          else if (list[0]) setLeadId(String(list[0].id))
+        } catch (e) {
+          if (!cancelled) setError(e.message || 'Failed to load members')
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      })()
+    return () => {
+      cancelled = true
+    }
+  }, [projectCode])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!leadId) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await apiUpdateProject(projectCode, { lead_id: Number(leadId) })
+      await onSaved()
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to update leader')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal title="Change leader" onClose={onClose}>
+      <form onSubmit={submit} className="modal-body">
+        {loading ? (
+          <div className="placeholder-note">Loading members…</div>
+        ) : (
+          <label className="field">
+            <span className="field-label">Leader</span>
+            <select value={leadId} onChange={(e) => setLeadId(e.target.value)}>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} ({m.email})
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {error && <div className="form-error">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn primary" disabled={submitting || loading || !leadId}>
+            Save
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function DeleteProjectDialog({ projectCode, projectName, onClose, onDeleted }) {
+  const [confirm, setConfirm] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+  const matches = confirm === projectCode
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!matches) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await apiDeleteProject(projectCode)
+      await onDeleted()
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to delete project')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal title="Delete project" onClose={onClose}>
+      <form onSubmit={submit} className="modal-body">
+        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
+          This permanently removes <strong>{projectName}</strong> and all its tasks,
+          comments, and attachments. This cannot be undone.
+        </p>
+        <label className="field">
+          <span className="field-label">
+            Type <span className="mono">{projectCode}</span> to confirm
+          </span>
+          <input
+            autoFocus
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder={projectCode}
+          />
+        </label>
+        {error && <div className="form-error">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn primary" disabled={!matches || submitting}>
+            Delete project
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 export default function BoardPage() {
   const { user, logout } = useAuth()
   const location = useLocation()
@@ -245,6 +371,9 @@ export default function BoardPage() {
   const [editTaskId, setEditTaskId] = useState(null)
   const [search, setSearch] = useState('')
   const [columnSorts, setColumnSorts] = useState({})
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
+  const [showChangeLeader, setShowChangeLeader] = useState(false)
+  const [showDeleteProject, setShowDeleteProject] = useState(false)
 
   const activeProject = useMemo(
     () => projects.find((p) => p.code === activeCode) || null,
@@ -345,6 +474,16 @@ export default function BoardPage() {
     await apiCreateTask(activeCode, payload)
     await refreshBoard(activeCode)
     await refreshProjects()
+  }
+
+  const handleDeleteTask = async (id) => {
+    try {
+      await apiDeleteTask(id)
+      await refreshBoard(activeCode)
+      await refreshProjects()
+    } catch (err) {
+      setError(err.message || 'Failed to delete task')
+    }
   }
 
   const dropAnchors = (columnEl, movingId, clientY) => {
@@ -502,9 +641,6 @@ export default function BoardPage() {
             <ArrowLeft size={13} strokeWidth={1.8} /> Projects
           </Link>
           <div style={{ flex: 1 }} />
-          <button className="btn primary" onClick={() => setNewTaskStatus('backlog')}>
-            <Plus size={13} strokeWidth={1.8} /> New task
-          </button>
           <div className="user-menu">
             <button
               className="avatar accent"
@@ -560,9 +696,40 @@ export default function BoardPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="btn">
-              <MoreHorizontal size={13} strokeWidth={1.5} />
+            <button className="btn primary" onClick={() => setNewTaskStatus('backlog')}>
+              <Plus size={13} strokeWidth={1.8} /> New task
             </button>
+            <div className="user-menu">
+              <button
+                className="btn"
+                onClick={() => setHeaderMenuOpen((v) => !v)}
+                aria-label="Project actions"
+              >
+                <MoreHorizontal size={13} strokeWidth={1.5} />
+              </button>
+              {headerMenuOpen && (
+                <div className="menu" onMouseLeave={() => setHeaderMenuOpen(false)}>
+                  <button
+                    className="menu-item"
+                    onClick={() => {
+                      setHeaderMenuOpen(false)
+                      setShowChangeLeader(true)
+                    }}
+                  >
+                    <Users size={13} strokeWidth={1.5} /> Change leader
+                  </button>
+                  <button
+                    className="menu-item menu-item--danger"
+                    onClick={() => {
+                      setHeaderMenuOpen(false)
+                      setShowDeleteProject(true)
+                    }}
+                  >
+                    <Trash2 size={13} strokeWidth={1.5} /> Delete project
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -623,6 +790,7 @@ export default function BoardPage() {
                     isDragging={draggingId === task.id}
                     onOpen={(id) => setDetailTaskId(id)}
                     onEdit={(id) => setEditTaskId(id)}
+                    onDelete={handleDeleteTask}
                   />
                 ))}
 
@@ -760,6 +928,23 @@ export default function BoardPage() {
           onSave={async () => {
             await refreshBoard(activeCode)
             await refreshProjects()
+          }}
+        />
+      )}
+      {showChangeLeader && activeCode && (
+        <ChangeLeaderDialog
+          projectCode={activeCode}
+          onClose={() => setShowChangeLeader(false)}
+          onSaved={refreshProjects}
+        />
+      )}
+      {showDeleteProject && activeProject && (
+        <DeleteProjectDialog
+          projectCode={activeProject.code}
+          projectName={activeProject.name}
+          onClose={() => setShowDeleteProject(false)}
+          onDeleted={async () => {
+            navigate('/')
           }}
         />
       )}

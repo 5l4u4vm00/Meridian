@@ -11,7 +11,7 @@ from ..models.user import User
 def counts_by_status(db: Session, project_id: int) -> dict[TaskStatus, int]:
     rows = db.execute(
         select(Task.status, func.count())
-        .where(Task.project_id == project_id)
+        .where(Task.project_id == project_id, Task.is_deleted.is_(False))
         .group_by(Task.status)
     ).all()
     out = {s: 0 for s in TaskStatus}
@@ -28,6 +28,7 @@ def overdue_count(db: Session, project_id: int) -> int:
             .select_from(Task)
             .where(
                 Task.project_id == project_id,
+                Task.is_deleted.is_(False),
                 Task.due_date.is_not(None),
                 Task.due_date < today,
                 Task.status != TaskStatus.shipped,
@@ -45,6 +46,7 @@ def shipped_since(db: Session, project_id: int, days: int = 7) -> int:
             .select_from(Task)
             .where(
                 Task.project_id == project_id,
+                Task.is_deleted.is_(False),
                 Task.completed_at.is_not(None),
                 Task.completed_at >= cutoff,
             )
@@ -59,6 +61,7 @@ def active_tasks_by_user(db: Session, project_id: int) -> dict[int, int]:
         select(Task.assignee_id, func.count())
         .where(
             Task.project_id == project_id,
+            Task.is_deleted.is_(False),
             Task.assignee_id.is_not(None),
             Task.status != TaskStatus.shipped,
         )

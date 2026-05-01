@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 
 from ...models.user import User
 from ...schemas.activity import ActivityEventRead
-from ...schemas.project import ProjectCreate, ProjectRead, ProjectSummary, ProjectUpdate
+from ...schemas.project import (
+    MemberRead,
+    ProjectCreate,
+    ProjectRead,
+    ProjectSummary,
+    ProjectUpdate,
+)
 from ...schemas.stats import ProjectStats, TeamMemberLoad
 from ...services import activity_service, project_service, stats_service
 from ...services.project_service import ProjectError
@@ -58,6 +64,30 @@ def update_project(
     except ProjectError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return ProjectRead.model_validate(project)
+
+
+@router.delete("/{code}", status_code=204)
+def delete_project(
+    code: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        project_service.delete_project(db, code)
+    except ProjectError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+
+
+@router.get("/{code}/members", response_model=list[MemberRead])
+def list_members(
+    code: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        return project_service.list_members(db, code)
+    except ProjectError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
 @router.get("/{code}/stats", response_model=ProjectStats)

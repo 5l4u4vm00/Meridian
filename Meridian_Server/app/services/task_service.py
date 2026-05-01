@@ -89,6 +89,11 @@ def update_task(db: Session, task_id: int, payload: TaskUpdate, *, actor_id: int
     return updated
 
 
+def delete_task(db: Session, task_id: int, *, actor_id: int) -> None:
+    task = get_task(db, task_id)
+    task_repository.delete(db, task)
+
+
 def move_task(db: Session, task_id: int, payload: TaskMove, *, actor_id: int) -> Task:
     task = get_task(db, task_id)
     from_status = task.status

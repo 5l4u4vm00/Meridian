@@ -1,11 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import case, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from ..models.project import Project
 from ..models.project_member import ProjectMember
 from ..models.task import Task, TaskStatus
+from ..models.user import User
 
 
 def create(
@@ -37,11 +38,19 @@ def get(db: Session, project_id: int) -> Project | None:
 
 
 def get_by_code(db: Session, code: str) -> Project | None:
-    return db.scalars(select(Project).where(Project.code == code)).first()
+    return db.scalars(
+        select(Project).where(Project.code == code, Project.is_deleted.is_(False))
+    ).first()
 
 
 def list_all(db: Session) -> list[Project]:
-    return list(db.scalars(select(Project).order_by(Project.created_at)))
+    return list(
+        db.scalars(
+            select(Project)
+            .where(Project.is_deleted.is_(False))
+            .order_by(Project.created_at)
+        )
+    )
 
 
 def list_with_summary(db: Session) -> list[dict]:
@@ -58,7 +67,11 @@ def list_with_summary(db: Session) -> list[dict]:
             total_expr,
             last_expr,
         )
-        .outerjoin(Task, Task.project_id == Project.id)
+        .outerjoin(
+            Task,
+            and_(Task.project_id == Project.id, Task.is_deleted.is_(False)),
+        )
+        .where(Project.is_deleted.is_(False))
         .group_by(Project.id, Project.code, Project.name, Project.color, Project.created_at)
         .order_by(Project.created_at)
     )
@@ -83,7 +96,11 @@ def list_with_summary(db: Session) -> list[dict]:
 
 def task_count(db: Session, project_id: int) -> int:
     return (
-        db.scalar(select(func.count()).select_from(Task).where(Task.project_id == project_id))
+        db.scalar(
+            select(func.count())
+            .select_from(Task)
+            .where(Task.project_id == project_id, Task.is_deleted.is_(False))
+        )
         or 0
     )
 
@@ -93,4 +110,22 @@ def add_member(db: Session, *, project_id: int, user_id: int, role: str = "membe
     if exists is not None:
         return
     db.add(ProjectMember(project_id=project_id, user_id=user_id, role=role))
+    db.commit()
+
+
+def list_members(db: Session, project_id: int) -> list[dict]:
+    stmt = (
+        select(User.id, User.name, User.email, ProjectMember.role)
+        .join(ProjectMember, ProjectMember.user_id == User.id)
+        .where(ProjectMember.project_id == project_id)
+        .order_by(User.name)
+    )
+    return [
+        {"id": uid, "name": name, "email": email, "role": role}
+        for uid, name, email, role in db.execute(stmt).all()
+    ]
+
+
+def delete(db: Session, project: Project) -> None:
+    project.is_deleted = True
     db.commit()

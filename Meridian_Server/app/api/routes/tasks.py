@@ -113,6 +113,19 @@ def get_task_detail(
     }
 
 
+@router.delete("/tasks/{task_id}", status_code=204)
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        task_service.delete_task(db, task_id, actor_id=user.id)
+    except TaskError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    return None
+
+
 @router.post("/tasks/{task_id}/move", response_model=TaskRead)
 def move_task(
     task_id: int,

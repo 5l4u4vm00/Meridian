@@ -42,3 +42,10 @@ class ProjectSummary(BaseModel):
     open_count: int
     shipped_count: int
     last_activity: datetime | None = None
+
+
+class MemberRead(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str | None = None

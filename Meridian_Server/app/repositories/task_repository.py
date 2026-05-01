@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..models.project import Project
 from ..models.task import Task, TaskPriority, TaskStatus
 
 
@@ -59,14 +60,17 @@ def create(
 
 
 def get(db: Session, task_id: int) -> Task | None:
-    return db.get(Task, task_id)
+    task = db.get(Task, task_id)
+    if task is None or task.is_deleted:
+        return None
+    return task
 
 
 def list_for_project(db: Session, project_id: int) -> list[Task]:
     return list(
         db.scalars(
             select(Task)
-            .where(Task.project_id == project_id)
+            .where(Task.project_id == project_id, Task.is_deleted.is_(False))
             .order_by(Task.status, Task.sort_key, Task.id)
         )
     )
@@ -75,7 +79,15 @@ def list_for_project(db: Session, project_id: int) -> list[Task]:
 def list_for_assignee(
     db: Session, user_id: int, *, include_shipped: bool = False
 ) -> list[Task]:
-    stmt = select(Task).where(Task.assignee_id == user_id)
+    stmt = (
+        select(Task)
+        .join(Project, Project.id == Task.project_id)
+        .where(
+            Task.assignee_id == user_id,
+            Task.is_deleted.is_(False),
+            Project.is_deleted.is_(False),
+        )
+    )
     if not include_shipped:
         stmt = stmt.where(Task.status != TaskStatus.shipped)
     # NULL due_dates sort last; otherwise ascending due_date, then status, sort_key, id.
@@ -83,6 +95,11 @@ def list_for_assignee(
         Task.due_date.is_(None), Task.due_date, Task.status, Task.sort_key, Task.id
     )
     return list(db.scalars(stmt))
+
+
+def delete(db: Session, task: Task) -> None:
+    task.is_deleted = True
+    db.commit()
 
 
 def update(db: Session, task: Task, **changes) -> Task:
@@ -115,6 +132,7 @@ def compute_move_sort_key(
     def _valid(t):
         return (
             t is not None
+            and not t.is_deleted
             and t.id != moving_task_id
             and t.project_id == project_id
             and t.status == status

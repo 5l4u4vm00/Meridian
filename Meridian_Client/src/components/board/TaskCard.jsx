@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { MessageSquare, Paperclip, Pencil } from 'lucide-react'
+import { MessageSquare, Paperclip, Pencil, Trash2 } from 'lucide-react'
 
 const PRIORITY_STYLES = {
   high: { color: 'var(--accent)', label: 'High' },
@@ -13,7 +13,7 @@ function formatDue(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
 }
 
-export default function TaskCard({ task, onDragStart, isDragging, onOpen, onEdit }) {
+export default function TaskCard({ task, onDragStart, isDragging, onOpen, onEdit, onDelete }) {
   const pri = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.medium
   const downRef = useRef({ x: 0, y: 0 })
   const stop = (e) => e.stopPropagation()
@@ -53,6 +53,24 @@ export default function TaskCard({ task, onDragStart, isDragging, onOpen, onEdit
             }}
           >
             <Pencil size={14} strokeWidth={1.6} />
+          </button>
+          <button
+            type="button"
+            className="card-delete-btn"
+            aria-label="Delete task"
+            onMouseDown={stop}
+            onMouseUp={stop}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (window.confirm(`Delete ${task.code}?`)) onDelete?.(task.id)
+            }}
+            draggable={false}
+            onDragStart={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+          >
+            <Trash2 size={14} strokeWidth={1.6} />
           </button>
           <span className="priority-dot" style={{ background: pri.color }} title={pri.label} />
         </div>

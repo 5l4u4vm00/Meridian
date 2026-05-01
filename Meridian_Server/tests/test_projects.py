@@ -83,3 +83,38 @@ def test_get_project_by_code(client):
 
     miss = client.get("/projects/NOPE", headers=headers)
     assert miss.status_code == 404
+
+
+def test_delete_project_removes_tasks(client):
+    headers = _auth_headers(client)
+    client.post("/projects", json={"code": "DEL", "name": "Doomed"}, headers=headers)
+    client.post(
+        "/projects/DEL/tasks",
+        json={"title": "wont survive", "status": "backlog"},
+        headers=headers,
+    )
+
+    r = client.delete("/projects/DEL", headers=headers)
+    assert r.status_code == 204
+
+    miss = client.get("/projects/DEL", headers=headers)
+    assert miss.status_code == 404
+    lst = client.get("/projects", headers=headers).json()
+    assert all(p["code"] != "DEL" for p in lst)
+
+
+def test_delete_project_not_found(client):
+    headers = _auth_headers(client)
+    r = client.delete("/projects/NOPE", headers=headers)
+    assert r.status_code == 404
+
+
+def test_list_project_members(client):
+    headers = _auth_headers(client)
+    client.post("/projects", json={"code": "MRD", "name": "x"}, headers=headers)
+    r = client.get("/projects/MRD/members", headers=headers)
+    assert r.status_code == 200
+    members = r.json()
+    assert len(members) == 1
+    assert members[0]["email"] == "a@b.com"
+    assert members[0]["role"] == "lead"

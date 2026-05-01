@@ -15,3 +15,6 @@ export const updateTask = (id, payload) =>
 
 export const moveTask = (id, payload) =>
   apiFetch(`/tasks/${id}/move`, { method: 'POST', body: payload })
+
+export const deleteTask = (id) =>
+  apiFetch(`/tasks/${id}`, { method: 'DELETE' })

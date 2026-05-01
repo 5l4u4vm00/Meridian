@@ -9,3 +9,8 @@ export const getProject = (code) => apiFetch(`/projects/${code}`)
 
 export const updateProject = (code, payload) =>
   apiFetch(`/projects/${code}`, { method: 'PATCH', body: payload })
+
+export const deleteProject = (code) =>
+  apiFetch(`/projects/${code}`, { method: 'DELETE' })
+
+export const listMembers = (code) => apiFetch(`/projects/${code}/members`)
