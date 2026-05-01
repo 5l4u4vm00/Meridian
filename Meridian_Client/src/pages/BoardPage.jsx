@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
-  ArrowUpRight,
-  ChevronRight,
   LogOut,
   MoreHorizontal,
   Plus,
@@ -665,13 +663,6 @@ export default function BoardPage() {
 
         <div className="project-header">
           <div>
-            <div className="breadcrumb">
-              <span>Studio</span>
-              <ChevronRight size={11} strokeWidth={1.5} />
-              <span>{activeProject?.code}</span>
-              <ChevronRight size={11} strokeWidth={1.5} />
-              <span style={{ color: 'var(--ink)' }}>Board</span>
-            </div>
             <h1 className="serif project-title">
               {activeProject?.name?.split(' ').slice(0, -1).join(' ')}{' '}
               <em>{activeProject?.name?.split(' ').slice(-1)}</em>
