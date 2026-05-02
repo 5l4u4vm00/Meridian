@@ -49,3 +49,8 @@ class MemberRead(BaseModel):
     name: str
     email: str
     role: str | None = None
+
+
+class MemberAdd(BaseModel):
+    user_id: int
+    role: str = "member"

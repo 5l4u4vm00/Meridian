@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from ...models.user import User
 from ...schemas.activity import ActivityEventRead
 from ...schemas.project import (
+    MemberAdd,
     MemberRead,
     ProjectCreate,
     ProjectRead,
@@ -86,6 +87,19 @@ def list_members(
 ):
     try:
         return project_service.list_members(db, code)
+    except ProjectError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+
+
+@router.post("/{code}/members", response_model=MemberRead, status_code=201)
+def add_member(
+    code: str,
+    payload: MemberAdd,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    try:
+        return project_service.add_member(db, code, payload.user_id, payload.role)
     except ProjectError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 

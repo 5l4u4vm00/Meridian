@@ -118,3 +118,62 @@ def test_list_project_members(client):
     assert len(members) == 1
     assert members[0]["email"] == "a@b.com"
     assert members[0]["role"] == "lead"
+
+
+def test_add_project_member(client):
+    headers = _auth_headers(client)
+    client.post("/projects", json={"code": "MRD", "name": "x"}, headers=headers)
+    other = client.post(
+        "/auth/register",
+        json={"email": "bob@b.com", "password": "password123", "name": "Bob"},
+    ).json()
+    bob_id = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {other['access_token']}"},
+    ).json()["id"]
+
+    r = client.post(
+        "/projects/MRD/members",
+        json={"user_id": bob_id},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["id"] == bob_id
+    assert body["role"] == "member"
+
+    members = client.get("/projects/MRD/members", headers=headers).json()
+    assert {m["email"] for m in members} == {"a@b.com", "bob@b.com"}
+
+
+def test_add_project_member_idempotent(client):
+    headers = _auth_headers(client)
+    client.post("/projects", json={"code": "MRD", "name": "x"}, headers=headers)
+    other = client.post(
+        "/auth/register",
+        json={"email": "bob@b.com", "password": "password123", "name": "Bob"},
+    ).json()
+    bob_id = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {other['access_token']}"},
+    ).json()["id"]
+
+    r1 = client.post(
+        "/projects/MRD/members", json={"user_id": bob_id}, headers=headers
+    )
+    r2 = client.post(
+        "/projects/MRD/members", json={"user_id": bob_id}, headers=headers
+    )
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+    members = client.get("/projects/MRD/members", headers=headers).json()
+    assert len([m for m in members if m["id"] == bob_id]) == 1
+
+
+def test_add_project_member_unknown_user(client):
+    headers = _auth_headers(client)
+    client.post("/projects", json={"code": "MRD", "name": "x"}, headers=headers)
+    r = client.post(
+        "/projects/MRD/members", json={"user_id": 9999}, headers=headers
+    )
+    assert r.status_code == 404

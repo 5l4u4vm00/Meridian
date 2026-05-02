@@ -7,6 +7,7 @@ import {
   Plus,
   Search,
   Trash2,
+  UserPlus,
   Users,
 } from 'lucide-react'
 import TaskCard from '../components/board/TaskCard'
@@ -18,12 +19,14 @@ import Sidebar from '../components/Sidebar'
 import { relativeTime } from '../utils/time'
 import { useAuth } from '../auth/useAuth'
 import {
+  addMember as apiAddMember,
   createProject as apiCreateProject,
   deleteProject as apiDeleteProject,
   listMembers as apiListMembers,
   listProjects as apiListProjects,
   updateProject as apiUpdateProject,
 } from '../api/projects'
+import { listUsers as apiListUsers } from '../api/users'
 import {
   createTask as apiCreateTask,
   deleteTask as apiDeleteTask,
@@ -294,6 +297,161 @@ function ChangeLeaderDialog({ projectCode, onClose, onSaved }) {
   )
 }
 
+function AddMemberDialog({ projectCode, onClose, onSaved }) {
+  const [candidates, setCandidates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+      ; (async () => {
+        try {
+          const [users, members] = await Promise.all([
+            apiListUsers(),
+            apiListMembers(projectCode),
+          ])
+          if (cancelled) return
+          const memberIds = new Set(members.map((m) => m.id))
+          setCandidates(users.filter((u) => !memberIds.has(u.id)))
+        } catch (e) {
+          if (!cancelled) setError(e.message || 'Failed to load users')
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      })()
+    return () => {
+      cancelled = true
+    }
+  }, [projectCode])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return candidates.slice(0, 8)
+    return candidates
+      .filter(
+        (u) =>
+          (u.name || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q),
+      )
+      .slice(0, 8)
+  }, [candidates, query])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!selected) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await apiAddMember(projectCode, { user_id: selected.id })
+      await onSaved()
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to add member')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal title="Add member" onClose={onClose}>
+      <form onSubmit={submit} className="modal-body">
+        {loading ? (
+          <div className="placeholder-note">Loading users…</div>
+        ) : (
+          <>
+            {selected && (
+              <div className="field">
+                <span className="field-label">Selected</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    border: '1px solid var(--rule)',
+                    borderRadius: 6,
+                  }}
+                >
+                  <span>
+                    {selected.name}{' '}
+                    <span style={{ color: 'var(--ink-60)' }}>
+                      ({selected.email})
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setSelected(null)}
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+            )}
+            {!selected && (
+              <>
+                <label className="field">
+                  <span className="field-label">Search</span>
+                  <input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Name or email"
+                  />
+                </label>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    maxHeight: 240,
+                    overflowY: 'auto',
+                  }}
+                >
+                  {filtered.length === 0 ? (
+                    <div className="placeholder-note">No matching users.</div>
+                  ) : (
+                    filtered.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        className="menu-item"
+                        onClick={() => setSelected(u)}
+                      >
+                        <span>
+                          {u.name}{' '}
+                          <span style={{ color: 'var(--ink-60)' }}>
+                            ({u.email})
+                          </span>
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+        {error && <div className="form-error">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn primary"
+            disabled={submitting || loading || !selected}
+          >
+            Add
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 function DeleteProjectDialog({ projectCode, projectName, onClose, onDeleted }) {
   const [confirm, setConfirm] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -372,11 +530,35 @@ export default function BoardPage() {
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
   const [showChangeLeader, setShowChangeLeader] = useState(false)
   const [showDeleteProject, setShowDeleteProject] = useState(false)
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [members, setMembers] = useState([])
 
   const activeProject = useMemo(
     () => projects.find((p) => p.code === activeCode) || null,
     [projects, activeCode],
   )
+
+  const isLead = useMemo(
+    () =>
+      Boolean(
+        user?.id &&
+          members.some((m) => m.id === user.id && m.role === 'lead'),
+      ),
+    [members, user],
+  )
+
+  const refreshMembers = useCallback(async (code) => {
+    if (!code) {
+      setMembers([])
+      return
+    }
+    try {
+      const list = await apiListMembers(code)
+      setMembers(list)
+    } catch {
+      setMembers([])
+    }
+  }, [])
 
   const refreshProjects = useCallback(async () => {
     const list = await apiListProjects()
@@ -441,17 +623,19 @@ export default function BoardPage() {
     let cancelled = false
       ; (async () => {
         try {
-          const [b, s, w, a] = await Promise.all([
+          const [b, s, w, a, m] = await Promise.all([
             apiListBoard(activeCode),
             apiGetStats(activeCode).catch(() => null),
             apiGetWorkload(activeCode).catch(() => []),
             apiGetActivity(activeCode).catch(() => []),
+            apiListMembers(activeCode).catch(() => []),
           ])
           if (cancelled) return
           setBoard(b)
           setStats(s)
           setWorkload(w)
           setActivity(a)
+          setMembers(m)
         } catch (e) {
           if (!cancelled) setError(e.message || 'Failed to load board')
         }
@@ -690,37 +874,48 @@ export default function BoardPage() {
             <button className="btn primary" onClick={() => setNewTaskStatus('backlog')}>
               <Plus size={13} strokeWidth={1.8} /> New task
             </button>
-            <div className="user-menu">
-              <button
-                className="btn"
-                onClick={() => setHeaderMenuOpen((v) => !v)}
-                aria-label="Project actions"
-              >
-                <MoreHorizontal size={13} strokeWidth={1.5} />
-              </button>
-              {headerMenuOpen && (
-                <div className="menu" onMouseLeave={() => setHeaderMenuOpen(false)}>
-                  <button
-                    className="menu-item"
-                    onClick={() => {
-                      setHeaderMenuOpen(false)
-                      setShowChangeLeader(true)
-                    }}
-                  >
-                    <Users size={13} strokeWidth={1.5} /> Change leader
-                  </button>
-                  <button
-                    className="menu-item menu-item--danger"
-                    onClick={() => {
-                      setHeaderMenuOpen(false)
-                      setShowDeleteProject(true)
-                    }}
-                  >
-                    <Trash2 size={13} strokeWidth={1.5} /> Delete project
-                  </button>
-                </div>
-              )}
-            </div>
+            {isLead && (
+              <div className="user-menu">
+                <button
+                  className="btn"
+                  onClick={() => setHeaderMenuOpen((v) => !v)}
+                  aria-label="Project actions"
+                >
+                  <MoreHorizontal size={13} strokeWidth={1.5} />
+                </button>
+                {headerMenuOpen && (
+                  <div className="menu" onMouseLeave={() => setHeaderMenuOpen(false)}>
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setHeaderMenuOpen(false)
+                        setShowAddMember(true)
+                      }}
+                    >
+                      <UserPlus size={13} strokeWidth={1.5} /> Add member
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setHeaderMenuOpen(false)
+                        setShowChangeLeader(true)
+                      }}
+                    >
+                      <Users size={13} strokeWidth={1.5} /> Change leader
+                    </button>
+                    <button
+                      className="menu-item menu-item--danger"
+                      onClick={() => {
+                        setHeaderMenuOpen(false)
+                        setShowDeleteProject(true)
+                      }}
+                    >
+                      <Trash2 size={13} strokeWidth={1.5} /> Delete project
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -926,7 +1121,17 @@ export default function BoardPage() {
         <ChangeLeaderDialog
           projectCode={activeCode}
           onClose={() => setShowChangeLeader(false)}
-          onSaved={refreshProjects}
+          onSaved={async () => {
+            await refreshProjects()
+            await refreshMembers(activeCode)
+          }}
+        />
+      )}
+      {showAddMember && activeCode && (
+        <AddMemberDialog
+          projectCode={activeCode}
+          onClose={() => setShowAddMember(false)}
+          onSaved={() => refreshMembers(activeCode)}
         />
       )}
       {showDeleteProject && activeProject && (

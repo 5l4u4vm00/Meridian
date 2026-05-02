@@ -14,3 +14,6 @@ export const deleteProject = (code) =>
   apiFetch(`/projects/${code}`, { method: 'DELETE' })
 
 export const listMembers = (code) => apiFetch(`/projects/${code}/members`)
+
+export const addMember = (code, payload) =>
+  apiFetch(`/projects/${code}/members`, { method: 'POST', body: payload })

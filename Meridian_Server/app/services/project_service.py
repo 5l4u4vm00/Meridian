@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from ..models.project import Project
-from ..repositories import project_repository
+from ..repositories import project_repository, user_repository
 from ..schemas.project import ProjectCreate, ProjectSummary, ProjectUpdate
 
 
@@ -67,3 +67,19 @@ def delete_project(db: Session, code: str) -> None:
 def list_members(db: Session, code: str) -> list[dict]:
     project = get_by_code(db, code)
     return project_repository.list_members(db, project.id)
+
+
+def add_member(db: Session, code: str, user_id: int, role: str = "member") -> dict:
+    project = get_by_code(db, code)
+    user = user_repository.get(db, user_id)
+    if user is None:
+        raise ProjectError("user not found", status_code=404)
+    safe_role = "member"
+    project_repository.add_member(db, project_id=project.id, user_id=user.id, role=safe_role)
+    existing = next(
+        (m for m in project_repository.list_members(db, project.id) if m["id"] == user.id),
+        None,
+    )
+    if existing is not None:
+        return existing
+    return {"id": user.id, "name": user.name, "email": user.email, "role": safe_role}

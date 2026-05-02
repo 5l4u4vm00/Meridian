@@ -33,9 +33,9 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     environment:
-      PORT: 8080
+      PORT: 8081
     ports:
-      - "8080:8080"
+      - "8081:8081"
     depends_on:
       - server
 
