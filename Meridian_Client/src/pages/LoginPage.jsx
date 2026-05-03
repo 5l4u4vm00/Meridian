@@ -14,8 +14,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (status === 'authed') {
-    const to = location.state?.from?.pathname || '/'
-    return <Navigate to={to} replace />
+    return <Navigate to={'/'} replace />
   }
 
   const onSubmit = async (e) => {
@@ -24,8 +23,7 @@ export default function LoginPage() {
     setSubmitting(true)
     try {
       await login(email, password)
-      const to = location.state?.from?.pathname || '/'
-      navigate(to, { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {

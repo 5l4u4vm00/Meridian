@@ -62,6 +62,31 @@ def update_project(
 ) -> Project:
     project, _ = authz.require_lead_by_code(db, code, user)
     changes = payload.model_dump(exclude_unset=True)
+
+    if "lead_id" in changes:
+        new_lead_id = changes["lead_id"]
+        if new_lead_id is None:
+            raise ProjectError("lead_id is required", status_code=400)
+        if user_repository.get(db, new_lead_id) is None:
+            raise ProjectError("user not found", status_code=404)
+        current_leads = [
+            m for m in project_repository.list_members(db, project.id)
+            if m["role"] == authz.LEAD_ROLE and m["id"] != new_lead_id
+        ]
+        if not project_repository.set_member_role(
+            db, project_id=project.id, user_id=new_lead_id, role=authz.LEAD_ROLE
+        ):
+            raise ProjectError(
+                "new leader must be a project member", status_code=400
+            )
+        for m in current_leads:
+            project_repository.set_member_role(
+                db,
+                project_id=project.id,
+                user_id=m["id"],
+                role=authz.MEMBER_ROLE,
+            )
+
     for k, v in changes.items():
         setattr(project, k, v)
     db.commit()

@@ -121,6 +121,16 @@ def add_member(db: Session, *, project_id: int, user_id: int, role: str = "membe
     db.commit()
 
 
+def set_member_role(
+    db: Session, *, project_id: int, user_id: int, role: str
+) -> bool:
+    pm = db.get(ProjectMember, (project_id, user_id))
+    if pm is None:
+        return False
+    pm.role = role
+    return True
+
+
 def remove_member(db: Session, *, project_id: int, user_id: int) -> bool:
     pm = db.get(ProjectMember, (project_id, user_id))
     if pm is None:

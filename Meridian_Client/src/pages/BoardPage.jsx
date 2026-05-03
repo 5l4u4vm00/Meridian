@@ -17,7 +17,7 @@ import Modal from '../components/Modal'
 import NewProjectDialog from '../components/NewProjectDialog'
 import Sidebar from '../components/Sidebar'
 import { relativeTime } from '../utils/time'
-import { useAuth } from '../auth/useAuth'
+import { useAuth, useIsAdmin } from '../auth/useAuth'
 import {
   addMember as apiAddMember,
   createProject as apiCreateProject,
@@ -508,6 +508,7 @@ function DeleteProjectDialog({ projectCode, projectName, onClose, onDeleted }) {
 
 export default function BoardPage() {
   const { user, logout } = useAuth()
+  const isAdmin = useIsAdmin()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -547,6 +548,8 @@ export default function BoardPage() {
       ),
     [members, user],
   )
+
+  const canManageProject = isLead || isAdmin
 
   const refreshMembers = useCallback(async (code) => {
     if (!code) {
@@ -875,7 +878,7 @@ export default function BoardPage() {
             <button className="btn primary" onClick={() => setNewTaskStatus('backlog')}>
               <Plus size={13} strokeWidth={1.8} /> New task
             </button>
-            {isLead && (
+            {canManageProject && (
               <div className="user-menu">
                 <button
                   className="btn"
