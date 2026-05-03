@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Session
 
 from ..models.project import Project
+from ..models.user import User
 from ..repositories import project_repository, user_repository
 from ..schemas.project import ProjectCreate, ProjectSummary, ProjectUpdate
+from . import authz
+from .authz import AuthzError
 
 
 class ProjectError(Exception):
@@ -24,7 +27,9 @@ def create_project(db: Session, payload: ProjectCreate, *, created_by_id: int) -
         lead_id=payload.lead_id,
         created_by_id=created_by_id,
     )
-    project_repository.add_member(db, project_id=project.id, user_id=created_by_id, role="lead")
+    project_repository.add_member(
+        db, project_id=project.id, user_id=created_by_id, role=authz.LEAD_ROLE
+    )
     return project
 
 
@@ -32,9 +37,11 @@ def list_projects(db: Session) -> list[Project]:
     return project_repository.list_all(db)
 
 
-def list_project_summaries(db: Session) -> list[ProjectSummary]:
+def list_project_summaries(db: Session, *, user: User) -> list[ProjectSummary]:
+    user_id = None if authz.is_admin(user) else user.id
     return [
-        ProjectSummary(**row) for row in project_repository.list_with_summary(db)
+        ProjectSummary(**row)
+        for row in project_repository.list_with_summary(db, user_id=user_id)
     ]
 
 
@@ -45,8 +52,15 @@ def get_by_code(db: Session, code: str) -> Project:
     return project
 
 
-def update_project(db: Session, code: str, payload: ProjectUpdate) -> Project:
-    project = get_by_code(db, code)
+def get_project_for_user(db: Session, code: str, *, user: User) -> Project:
+    project, _ = authz.require_member_by_code(db, code, user)
+    return project
+
+
+def update_project(
+    db: Session, code: str, payload: ProjectUpdate, *, user: User
+) -> Project:
+    project, _ = authz.require_lead_by_code(db, code, user)
     changes = payload.model_dump(exclude_unset=True)
     for k, v in changes.items():
         setattr(project, k, v)
@@ -59,27 +73,51 @@ def task_count(db: Session, project_id: int) -> int:
     return project_repository.task_count(db, project_id)
 
 
-def delete_project(db: Session, code: str) -> None:
-    project = get_by_code(db, code)
+def delete_project(db: Session, code: str, *, user: User) -> None:
+    project, _ = authz.require_lead_by_code(db, code, user)
     project_repository.delete(db, project)
 
 
-def list_members(db: Session, code: str) -> list[dict]:
-    project = get_by_code(db, code)
+def list_members(db: Session, code: str, *, user: User) -> list[dict]:
+    project, _ = authz.require_member_by_code(db, code, user)
     return project_repository.list_members(db, project.id)
 
 
-def add_member(db: Session, code: str, user_id: int, role: str = "member") -> dict:
-    project = get_by_code(db, code)
-    user = user_repository.get(db, user_id)
-    if user is None:
+def add_member(
+    db: Session,
+    code: str,
+    user_id: int,
+    role: str = authz.MEMBER_ROLE,
+    *,
+    current_user: User,
+) -> dict:
+    project, _ = authz.require_lead_by_code(db, code, current_user)
+    target = user_repository.get(db, user_id)
+    if target is None:
         raise ProjectError("user not found", status_code=404)
-    safe_role = "member"
-    project_repository.add_member(db, project_id=project.id, user_id=user.id, role=safe_role)
+    project_repository.add_member(
+        db, project_id=project.id, user_id=target.id, role=role
+    )
     existing = next(
-        (m for m in project_repository.list_members(db, project.id) if m["id"] == user.id),
+        (m for m in project_repository.list_members(db, project.id) if m["id"] == target.id),
         None,
     )
     if existing is not None:
         return existing
-    return {"id": user.id, "name": user.name, "email": user.email, "role": safe_role}
+    return {"id": target.id, "name": target.name, "email": target.email, "role": role}
+
+
+__all__ = [
+    "ProjectError",
+    "AuthzError",
+    "create_project",
+    "list_projects",
+    "list_project_summaries",
+    "get_by_code",
+    "get_project_for_user",
+    "update_project",
+    "delete_project",
+    "list_members",
+    "add_member",
+    "task_count",
+]

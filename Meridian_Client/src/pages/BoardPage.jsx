@@ -313,6 +313,7 @@ function AddMemberDialog({ projectCode, onClose, onSaved }) {
             apiListUsers(),
             apiListMembers(projectCode),
           ])
+          console.log(users);
           if (cancelled) return
           const memberIds = new Set(members.map((m) => m.id))
           setCandidates(users.filter((u) => !memberIds.has(u.id)))
@@ -542,7 +543,7 @@ export default function BoardPage() {
     () =>
       Boolean(
         user?.id &&
-          members.some((m) => m.id === user.id && m.role === 'lead'),
+        members.some((m) => m.id === user.id && m.role === 'lead'),
       ),
     [members, user],
   )

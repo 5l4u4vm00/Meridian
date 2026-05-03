@@ -13,10 +13,13 @@ from ...schemas.project import (
 )
 from ...schemas.stats import ProjectStats, TeamMemberLoad
 from ...services import activity_service, project_service, stats_service
+from ...services.authz import AuthzError
 from ...services.project_service import ProjectError
 from ..deps import get_current_user, get_db
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+
+_HandledErrors = (ProjectError, AuthzError)
 
 
 @router.post("", response_model=ProjectRead, status_code=201)
@@ -27,7 +30,7 @@ def create_project(
 ):
     try:
         project = project_service.create_project(db, payload, created_by_id=user.id)
-    except ProjectError as e:
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return ProjectRead.model_validate(project)
 
@@ -37,7 +40,7 @@ def list_projects(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    return project_service.list_project_summaries(db)
+    return project_service.list_project_summaries(db, user=user)
 
 
 @router.get("/{code}", response_model=ProjectRead)
@@ -47,8 +50,8 @@ def get_project(
     user: User = Depends(get_current_user),
 ):
     try:
-        project = project_service.get_by_code(db, code)
-    except ProjectError as e:
+        project = project_service.get_project_for_user(db, code, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return ProjectRead.model_validate(project)
 
@@ -61,8 +64,8 @@ def update_project(
     user: User = Depends(get_current_user),
 ):
     try:
-        project = project_service.update_project(db, code, payload)
-    except ProjectError as e:
+        project = project_service.update_project(db, code, payload, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return ProjectRead.model_validate(project)
 
@@ -74,8 +77,8 @@ def delete_project(
     user: User = Depends(get_current_user),
 ):
     try:
-        project_service.delete_project(db, code)
-    except ProjectError as e:
+        project_service.delete_project(db, code, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -86,8 +89,8 @@ def list_members(
     user: User = Depends(get_current_user),
 ):
     try:
-        return project_service.list_members(db, code)
-    except ProjectError as e:
+        return project_service.list_members(db, code, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -99,8 +102,10 @@ def add_member(
     user: User = Depends(get_current_user),
 ):
     try:
-        return project_service.add_member(db, code, payload.user_id, payload.role)
-    except ProjectError as e:
+        return project_service.add_member(
+            db, code, payload.user_id, payload.role, current_user=user
+        )
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -111,8 +116,8 @@ def get_stats(
     user: User = Depends(get_current_user),
 ):
     try:
-        return stats_service.get_project_stats(db, code)
-    except ProjectError as e:
+        return stats_service.get_project_stats(db, code, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -123,8 +128,8 @@ def get_workload(
     user: User = Depends(get_current_user),
 ):
     try:
-        return stats_service.get_team_load(db, code)
-    except ProjectError as e:
+        return stats_service.get_team_load(db, code, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -136,7 +141,7 @@ def get_activity(
     user: User = Depends(get_current_user),
 ):
     try:
-        events = activity_service.list_for_project(db, code, limit=limit)
-    except ProjectError as e:
+        events = activity_service.list_for_project(db, code, user=user, limit=limit)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return [ActivityEventRead.from_event(e) for e in events]

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Plus, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, LogOut, Plus, Search } from 'lucide-react'
 import {
   createProject as apiCreateProject,
   listProjects as apiListProjects,
 } from '../api/projects'
 import NewProjectDialog from '../components/NewProjectDialog'
+import { useAuth } from '../auth/useAuth'
 import { relativeTime } from '../utils/time'
 import './board.css'
 import './projects.css'
@@ -22,6 +23,14 @@ const DEFAULT_SORT_DIR = {
   code: 'asc',
   tasks: 'desc',
   recent: 'desc',
+}
+
+function userInitials(name, email) {
+  const src = (name || email || '').trim()
+  if (!src) return '?'
+  const parts = src.split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return src.slice(0, 2).toUpperCase()
 }
 
 function SortableHeader({ label, sortValue, sortKey, sortDir, onSort }) {
@@ -92,6 +101,8 @@ function matchesFilter(p, filter) {
 
 export default function ProjectsPage() {
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [projects, setProjects] = useState([])
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
@@ -179,6 +190,27 @@ export default function ProjectsPage() {
         </div>
         <div className="brand-sub">A Project Studio</div>
         <div className="brand-rule" />
+        <div className="user-menu">
+          <button
+            type="button"
+            className="avatar accent"
+            onClick={() => setUserMenuOpen((v) => !v)}
+            aria-label="Account menu"
+          >
+            {userInitials(user?.name, user?.email)}
+          </button>
+          {userMenuOpen && (
+            <div className="menu" onMouseLeave={() => setUserMenuOpen(false)}>
+              <div className="menu-head">
+                <div className="menu-name">{user?.name || user?.email}</div>
+                <div className="menu-email">{user?.email}</div>
+              </div>
+              <button type="button" className="menu-item" onClick={logout}>
+                <LogOut size={13} strokeWidth={1.5} /> Log out
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <section className="projects-title-row">

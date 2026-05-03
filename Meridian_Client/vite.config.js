@@ -15,6 +15,7 @@ export default defineConfig({
       '/api': { target: apiTarget, changeOrigin: true },
       '/projects': { target: apiTarget, changeOrigin: true },
       '/tasks': { target: apiTarget, changeOrigin: true },
+      '/users': { target: apiTarget, changeOrigin: true },
     },
   },
 })

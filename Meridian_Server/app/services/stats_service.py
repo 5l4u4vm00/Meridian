@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
 
 from ..models.task import TaskStatus
-from ..repositories import project_repository, stats_repository
+from ..models.user import User
+from ..repositories import stats_repository
 from ..schemas.stats import ProjectStats, TeamMemberLoad
-from .project_service import ProjectError
+from . import authz
 
 # Max active (non-shipped) tasks before a team member is considered at 100%.
 WORKLOAD_CAP = 10
@@ -18,10 +19,8 @@ def _initials(name: str, fallback: str = "?") -> str:
     return fallback
 
 
-def get_project_stats(db: Session, code: str) -> ProjectStats:
-    project = project_repository.get_by_code(db, code)
-    if project is None:
-        raise ProjectError("project not found", status_code=404)
+def get_project_stats(db: Session, code: str, *, user: User) -> ProjectStats:
+    project, _ = authz.require_member_by_code(db, code, user)
     buckets = stats_repository.counts_by_status(db, project.id)
     shipped = buckets.get(TaskStatus.shipped, 0)
     total = sum(buckets.values())
@@ -33,10 +32,8 @@ def get_project_stats(db: Session, code: str) -> ProjectStats:
     )
 
 
-def get_team_load(db: Session, code: str) -> list[TeamMemberLoad]:
-    project = project_repository.get_by_code(db, code)
-    if project is None:
-        raise ProjectError("project not found", status_code=404)
+def get_team_load(db: Session, code: str, *, user: User) -> list[TeamMemberLoad]:
+    project, _ = authz.require_member_by_code(db, code, user)
     counts = stats_repository.active_tasks_by_user(db, project.id)
     members = stats_repository.project_members(db, project.id)
     out: list[TeamMemberLoad] = []

@@ -7,7 +7,14 @@
 }
 
 .projects-brand {
+  position: relative;
   margin-bottom: 8px;
+}
+
+.projects-brand .user-menu {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .projects-title-row {

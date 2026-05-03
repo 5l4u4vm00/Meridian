@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ...models.user import User
+from ...models.task import TaskStatus
 from ...schemas.attachment import AttachmentRead
 from ...schemas.comment import CommentRead
 from ...schemas.task import (
@@ -13,12 +14,16 @@ from ...schemas.task import (
     TaskRead,
     TaskUpdate,
 )
-from ...models.task import TaskStatus
 from ...services import attachment_service, comment_service, task_service
+from ...services.attachment_service import AttachmentError
+from ...services.authz import AuthzError
+from ...services.comment_service import CommentError
 from ...services.task_service import TaskError
 from ..deps import get_current_user, get_db
 
 router = APIRouter(tags=["tasks"])
+
+_HandledErrors = (TaskError, AuthzError)
 
 
 @router.get("/my-tasks", response_model=list[MyTaskRead])
@@ -40,8 +45,8 @@ def list_project_tasks(
     user: User = Depends(get_current_user),
 ):
     try:
-        tasks = task_service.list_tasks_for_project(db, code)
-    except TaskError as e:
+        tasks = task_service.list_tasks_for_project(db, code, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     buckets: dict[TaskStatus, list[TaskRead]] = {s: [] for s in TaskStatus}
     for t in tasks:
@@ -60,9 +65,9 @@ def create_task(
 ):
     try:
         task = task_service.create_task(
-            db, project_code=code, payload=payload, actor_id=user.id
+            db, project_code=code, payload=payload, actor=user
         )
-    except TaskError as e:
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return TaskRead.from_task(task)
 
@@ -74,8 +79,8 @@ def get_task(
     user: User = Depends(get_current_user),
 ):
     try:
-        task = task_service.get_task(db, task_id)
-    except TaskError as e:
+        task = task_service.get_task(db, task_id, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return TaskRead.from_task(task)
 
@@ -88,8 +93,8 @@ def update_task(
     user: User = Depends(get_current_user),
 ):
     try:
-        task = task_service.update_task(db, task_id, payload, actor_id=user.id)
-    except TaskError as e:
+        task = task_service.update_task(db, task_id, payload, actor=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return TaskRead.from_task(task)
 
@@ -101,11 +106,11 @@ def get_task_detail(
     user: User = Depends(get_current_user),
 ):
     try:
-        task = task_service.get_task(db, task_id)
-    except TaskError as e:
+        task = task_service.get_task(db, task_id, user=user)
+        comments = comment_service.list_comments(db, task_id, user=user)
+        attachments = attachment_service.list_attachments(db, task_id, user=user)
+    except (TaskError, CommentError, AttachmentError, AuthzError) as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
-    comments = comment_service.list_comments(db, task_id)
-    attachments = attachment_service.list_attachments(db, task_id)
     return {
         "task": TaskRead.from_task(task),
         "comments": [CommentRead.from_comment(c) for c in comments],
@@ -120,8 +125,8 @@ def delete_task(
     user: User = Depends(get_current_user),
 ):
     try:
-        task_service.delete_task(db, task_id, actor_id=user.id)
-    except TaskError as e:
+        task_service.delete_task(db, task_id, actor=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return None
 
@@ -134,7 +139,7 @@ def move_task(
     user: User = Depends(get_current_user),
 ):
     try:
-        task = task_service.move_task(db, task_id, payload, actor_id=user.id)
-    except TaskError as e:
+        task = task_service.move_task(db, task_id, payload, actor=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return TaskRead.from_task(task)

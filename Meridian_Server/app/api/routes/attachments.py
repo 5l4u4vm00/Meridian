@@ -7,9 +7,12 @@ from ...repositories import attachment_repository
 from ...schemas.attachment import AttachmentRead
 from ...services import attachment_service
 from ...services.attachment_service import AttachmentError
+from ...services.authz import AuthzError
 from ..deps import get_current_user, get_db
 
 router = APIRouter(tags=["attachments"])
+
+_HandledErrors = (AttachmentError, AuthzError)
 
 
 @router.get("/tasks/{task_id}/attachments", response_model=list[AttachmentRead])
@@ -19,8 +22,8 @@ def list_task_attachments(
     user: User = Depends(get_current_user),
 ):
     try:
-        attachments = attachment_service.list_attachments(db, task_id)
-    except AttachmentError as e:
+        attachments = attachment_service.list_attachments(db, task_id, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return [AttachmentRead.from_attachment(a) for a in attachments]
 
@@ -42,9 +45,9 @@ async def create_task_attachment(
             data=data,
             filename=file.filename or "untitled",
             mime_type=file.content_type,
-            actor_id=user.id,
+            actor=user,
         )
-    except AttachmentError as e:
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return AttachmentRead.from_attachment(att)
 
@@ -56,8 +59,8 @@ def download_attachment(
     user: User = Depends(get_current_user),
 ):
     try:
-        att = attachment_service.get_attachment(db, attachment_id)
-    except AttachmentError as e:
+        att = attachment_service.get_attachment(db, attachment_id, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     if not att.storage_key:
         raise HTTPException(status_code=404, detail="attachment has no stored file")

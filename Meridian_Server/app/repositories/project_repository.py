@@ -53,7 +53,7 @@ def list_all(db: Session) -> list[Project]:
     )
 
 
-def list_with_summary(db: Session) -> list[dict]:
+def list_with_summary(db: Session, *, user_id: int | None = None) -> list[dict]:
     shipped_expr = func.sum(case((Task.status == TaskStatus.shipped, 1), else_=0))
     total_expr = func.count(Task.id)
     last_expr = func.max(Task.updated_at)
@@ -75,6 +75,14 @@ def list_with_summary(db: Session) -> list[dict]:
         .group_by(Project.id, Project.code, Project.name, Project.color, Project.created_at)
         .order_by(Project.created_at)
     )
+    if user_id is not None:
+        stmt = stmt.join(
+            ProjectMember,
+            and_(
+                ProjectMember.project_id == Project.id,
+                ProjectMember.user_id == user_id,
+            ),
+        )
     out: list[dict] = []
     for pid, code, name, color, shipped, total, last in db.execute(stmt).all():
         shipped_n = int(shipped or 0)
@@ -111,6 +119,15 @@ def add_member(db: Session, *, project_id: int, user_id: int, role: str = "membe
         return
     db.add(ProjectMember(project_id=project_id, user_id=user_id, role=role))
     db.commit()
+
+
+def remove_member(db: Session, *, project_id: int, user_id: int) -> bool:
+    pm = db.get(ProjectMember, (project_id, user_id))
+    if pm is None:
+        return False
+    db.delete(pm)
+    db.commit()
+    return True
 
 
 def list_members(db: Session, project_id: int) -> list[dict]:

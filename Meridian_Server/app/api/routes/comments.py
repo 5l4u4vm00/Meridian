@@ -4,10 +4,13 @@ from sqlalchemy.orm import Session
 from ...models.user import User
 from ...schemas.comment import CommentCreate, CommentRead
 from ...services import comment_service
+from ...services.authz import AuthzError
 from ...services.comment_service import CommentError
 from ..deps import get_current_user, get_db
 
 router = APIRouter(tags=["comments"])
+
+_HandledErrors = (CommentError, AuthzError)
 
 
 @router.get("/tasks/{task_id}/comments", response_model=list[CommentRead])
@@ -17,8 +20,8 @@ def list_task_comments(
     user: User = Depends(get_current_user),
 ):
     try:
-        comments = comment_service.list_comments(db, task_id)
-    except CommentError as e:
+        comments = comment_service.list_comments(db, task_id, user=user)
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return [CommentRead.from_comment(c) for c in comments]
 
@@ -32,8 +35,8 @@ def create_task_comment(
 ):
     try:
         comment = comment_service.create_comment(
-            db, task_id=task_id, body=payload.body, actor_id=user.id
+            db, task_id=task_id, body=payload.body, actor=user
         )
-    except CommentError as e:
+    except _HandledErrors as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
     return CommentRead.from_comment(comment)

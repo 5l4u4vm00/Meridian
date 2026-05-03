@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,4 +54,4 @@ class MemberRead(BaseModel):
 
 class MemberAdd(BaseModel):
     user_id: int
-    role: str = "member"
+    role: Literal["lead", "member"] = "member"

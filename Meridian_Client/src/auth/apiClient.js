@@ -59,6 +59,7 @@ async function rawFetch(path, { method = 'GET', body, auth = false, raw = false 
   const res = await fetch(resolveUrl(path), {
     method,
     headers,
+    cache: 'no-store',
     body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
   })
   if (raw) {
