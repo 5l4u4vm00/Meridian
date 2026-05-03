@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
+  Archive,
   ArrowLeft,
   LogOut,
   MoreHorizontal,
@@ -506,6 +507,45 @@ function DeleteProjectDialog({ projectCode, projectName, onClose, onDeleted }) {
   )
 }
 
+function ArchiveProjectDialog({ projectCode, projectName, onClose, onArchived }) {
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+    try {
+      await apiUpdateProject(projectCode, { is_archived: true })
+      await onArchived()
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Failed to archive project')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal title="Archive project" onClose={onClose}>
+      <form onSubmit={submit} className="modal-body">
+        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
+          Archive <strong>{projectName}</strong>? It will be hidden from the
+          workspace. You can restore it later from the Archive view.
+        </p>
+        {error && <div className="form-error">{error}</div>}
+        <div className="modal-actions">
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn primary" disabled={submitting}>
+            Archive project
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 export default function BoardPage() {
   const { user, logout } = useAuth()
   const isAdmin = useIsAdmin()
@@ -531,6 +571,7 @@ export default function BoardPage() {
   const [columnSorts, setColumnSorts] = useState({})
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
   const [showChangeLeader, setShowChangeLeader] = useState(false)
+  const [showArchiveProject, setShowArchiveProject] = useState(false)
   const [showDeleteProject, setShowDeleteProject] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
   const [members, setMembers] = useState([])
@@ -869,8 +910,8 @@ export default function BoardPage() {
                 </span>
               </div>
               <div className="meta-item">
-                <span className="meta-label">Lead</span>
-                <span className="meta-value">{user?.name || '—'}</span>
+                <span className="meta-label">Leader</span>
+                <span className="meta-value">{members.find((m) => m.role === 'lead')?.name || '—'}</span>
               </div>
             </div>
           </div>
@@ -906,6 +947,15 @@ export default function BoardPage() {
                       }}
                     >
                       <Users size={13} strokeWidth={1.5} /> Change leader
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setHeaderMenuOpen(false)
+                        setShowArchiveProject(true)
+                      }}
+                    >
+                      <Archive size={13} strokeWidth={1.5} /> Archive project
                     </button>
                     <button
                       className="menu-item menu-item--danger"
@@ -1136,6 +1186,16 @@ export default function BoardPage() {
           projectCode={activeCode}
           onClose={() => setShowAddMember(false)}
           onSaved={() => refreshMembers(activeCode)}
+        />
+      )}
+      {showArchiveProject && activeProject && (
+        <ArchiveProjectDialog
+          projectCode={activeProject.code}
+          projectName={activeProject.name}
+          onClose={() => setShowArchiveProject(false)}
+          onArchived={async () => {
+            navigate('/')
+          }}
         />
       )}
       {showDeleteProject && activeProject && (

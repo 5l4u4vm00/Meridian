@@ -1,6 +1,7 @@
 import { apiFetch } from '../auth/apiClient'
 
-export const listProjects = () => apiFetch('/projects')
+export const listProjects = ({ archived = false } = {}) =>
+  apiFetch(`/projects${archived ? '?archived=true' : ''}`)
 
 export const createProject = (payload) =>
   apiFetch('/projects', { method: 'POST', body: payload })

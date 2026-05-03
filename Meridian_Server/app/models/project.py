@@ -23,5 +23,8 @@ class Project(Base):
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False, index=True
     )
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, index=True
+    )
 
     lead = relationship("User", foreign_keys=[lead_id], lazy="joined")

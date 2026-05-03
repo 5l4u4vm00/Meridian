@@ -37,23 +37,31 @@ def get(db: Session, project_id: int) -> Project | None:
     return db.get(Project, project_id)
 
 
-def get_by_code(db: Session, code: str) -> Project | None:
-    return db.scalars(
-        select(Project).where(Project.code == code, Project.is_deleted.is_(False))
-    ).first()
-
-
-def list_all(db: Session) -> list[Project]:
-    return list(
-        db.scalars(
-            select(Project)
-            .where(Project.is_deleted.is_(False))
-            .order_by(Project.created_at)
-        )
+def get_by_code(
+    db: Session, code: str, *, include_archived: bool = False
+) -> Project | None:
+    stmt = select(Project).where(
+        Project.code == code, Project.is_deleted.is_(False)
     )
+    if not include_archived:
+        stmt = stmt.where(Project.is_archived.is_(False))
+    return db.scalars(stmt).first()
 
 
-def list_with_summary(db: Session, *, user_id: int | None = None) -> list[dict]:
+def list_all(db: Session, *, archived: bool | None = False) -> list[Project]:
+    stmt = (
+        select(Project)
+        .where(Project.is_deleted.is_(False))
+        .order_by(Project.created_at)
+    )
+    if archived is not None:
+        stmt = stmt.where(Project.is_archived.is_(archived))
+    return list(db.scalars(stmt))
+
+
+def list_with_summary(
+    db: Session, *, user_id: int | None = None, archived: bool | None = False
+) -> list[dict]:
     shipped_expr = func.sum(case((Task.status == TaskStatus.shipped, 1), else_=0))
     total_expr = func.count(Task.id)
     last_expr = func.max(Task.updated_at)
@@ -63,6 +71,7 @@ def list_with_summary(db: Session, *, user_id: int | None = None) -> list[dict]:
             Project.code,
             Project.name,
             Project.color,
+            Project.is_archived,
             shipped_expr,
             total_expr,
             last_expr,
@@ -72,9 +81,18 @@ def list_with_summary(db: Session, *, user_id: int | None = None) -> list[dict]:
             and_(Task.project_id == Project.id, Task.is_deleted.is_(False)),
         )
         .where(Project.is_deleted.is_(False))
-        .group_by(Project.id, Project.code, Project.name, Project.color, Project.created_at)
+        .group_by(
+            Project.id,
+            Project.code,
+            Project.name,
+            Project.color,
+            Project.is_archived,
+            Project.created_at,
+        )
         .order_by(Project.created_at)
     )
+    if archived is not None:
+        stmt = stmt.where(Project.is_archived.is_(archived))
     if user_id is not None:
         stmt = stmt.join(
             ProjectMember,
@@ -84,7 +102,7 @@ def list_with_summary(db: Session, *, user_id: int | None = None) -> list[dict]:
             ),
         )
     out: list[dict] = []
-    for pid, code, name, color, shipped, total, last in db.execute(stmt).all():
+    for pid, code, name, color, is_archived, shipped, total, last in db.execute(stmt).all():
         shipped_n = int(shipped or 0)
         total_n = int(total or 0)
         out.append(
@@ -93,6 +111,7 @@ def list_with_summary(db: Session, *, user_id: int | None = None) -> list[dict]:
                 "code": code,
                 "name": name,
                 "color": color,
+                "is_archived": bool(is_archived),
                 "task_count": total_n,
                 "open_count": total_n - shipped_n,
                 "shipped_count": shipped_n,

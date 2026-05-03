@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
+import ArchivePage from './pages/ArchivePage'
 import BoardPage from './pages/BoardPage'
 import LoginPage from './pages/LoginPage'
 import ProjectsPage from './pages/ProjectsPage'
@@ -13,6 +14,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/board" element={<BoardPage />} />
+        <Route path="/archive" element={<ArchivePage />} />
       </Route>
     </Routes>
   )

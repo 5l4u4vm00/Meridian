@@ -17,6 +17,7 @@ class ProjectUpdate(BaseModel):
     color: str | None = None
     deadline: date | None = None
     lead_id: int | None = None
+    is_archived: bool | None = None
 
 
 class ProjectRead(BaseModel):
@@ -30,6 +31,7 @@ class ProjectRead(BaseModel):
     lead_id: int | None
     created_by_id: int
     created_at: datetime
+    is_archived: bool
 
 
 class ProjectSummary(BaseModel):
@@ -43,6 +45,7 @@ class ProjectSummary(BaseModel):
     open_count: int
     shipped_count: int
     last_activity: datetime | None = None
+    is_archived: bool = False
 
 
 class MemberRead(BaseModel):

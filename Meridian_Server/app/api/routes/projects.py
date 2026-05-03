@@ -37,10 +37,11 @@ def create_project(
 
 @router.get("", response_model=list[ProjectSummary])
 def list_projects(
+    archived: bool = False,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    return project_service.list_project_summaries(db, user=user)
+    return project_service.list_project_summaries(db, user=user, archived=archived)
 
 
 @router.get("/{code}", response_model=ProjectRead)

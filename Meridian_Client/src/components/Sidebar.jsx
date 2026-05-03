@@ -75,16 +75,18 @@ export default function Sidebar({
           <span>Library</span>
           <span className="section-label-num">ii.</span>
         </div>
-        {[
-          { icon: Users, label: 'Team' },
-          { icon: Archive, label: 'Archive' },
-          { icon: Settings, label: 'Settings' },
-        ].map((item) => (
-          <div key={item.label} className="nav-item">
-            <item.icon size={14} strokeWidth={1.5} />
-            <span>{item.label}</span>
-          </div>
-        ))}
+        <div className="nav-item">
+          <Users size={14} strokeWidth={1.5} />
+          <span>Team</span>
+        </div>
+        <Link to="/archive" className="nav-item">
+          <Archive size={14} strokeWidth={1.5} />
+          <span>Archive</span>
+        </Link>
+        <div className="nav-item">
+          <Settings size={14} strokeWidth={1.5} />
+          <span>Settings</span>
+        </div>
       </div>
     </aside>
   )

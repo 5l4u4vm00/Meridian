@@ -37,11 +37,15 @@ def list_projects(db: Session) -> list[Project]:
     return project_repository.list_all(db)
 
 
-def list_project_summaries(db: Session, *, user: User) -> list[ProjectSummary]:
+def list_project_summaries(
+    db: Session, *, user: User, archived: bool = False
+) -> list[ProjectSummary]:
     user_id = None if authz.is_admin(user) else user.id
     return [
         ProjectSummary(**row)
-        for row in project_repository.list_with_summary(db, user_id=user_id)
+        for row in project_repository.list_with_summary(
+            db, user_id=user_id, archived=archived
+        )
     ]
 
 
@@ -60,7 +64,10 @@ def get_project_for_user(db: Session, code: str, *, user: User) -> Project:
 def update_project(
     db: Session, code: str, payload: ProjectUpdate, *, user: User
 ) -> Project:
-    project, _ = authz.require_lead_by_code(db, code, user)
+    project = project_repository.get_by_code(db, code, include_archived=True)
+    if project is None:
+        raise authz.AuthzError("project not found", status_code=404)
+    authz.require_lead_for_project(db, project, user)
     changes = payload.model_dump(exclude_unset=True)
 
     if "lead_id" in changes:

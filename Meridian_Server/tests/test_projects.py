@@ -345,6 +345,56 @@ def test_admin_sees_all_projects_in_listing(client):
     assert {p["code"] for p in rows} == {"MRD", "ATL"}
 
 
+def test_lead_can_archive_and_unarchive_project(client):
+    headers = _auth_headers(client)
+    client.post("/projects", json={"code": "ARC", "name": "x"}, headers=headers)
+
+    r = client.patch("/projects/ARC", json={"is_archived": True}, headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["is_archived"] is True
+
+    active = client.get("/projects", headers=headers).json()
+    assert all(p["code"] != "ARC" for p in active)
+
+    archived = client.get("/projects?archived=true", headers=headers).json()
+    assert any(p["code"] == "ARC" and p["is_archived"] for p in archived)
+
+    # Archived board fetch 404s
+    assert client.get("/projects/ARC", headers=headers).status_code == 404
+
+    r2 = client.patch("/projects/ARC", json={"is_archived": False}, headers=headers)
+    assert r2.status_code == 200
+    assert r2.json()["is_archived"] is False
+    again = client.get("/projects", headers=headers).json()
+    assert any(p["code"] == "ARC" for p in again)
+
+
+def test_non_lead_member_cannot_archive(client):
+    lead_headers = _auth_headers(client)
+    client.post("/projects", json={"code": "ARC", "name": "x"}, headers=lead_headers)
+    bob_id, bob_headers = _register_and_get_id(client, "bob@b.com", name="Bob")
+    client.post(
+        "/projects/ARC/members", json={"user_id": bob_id}, headers=lead_headers
+    )
+
+    r = client.patch(
+        "/projects/ARC", json={"is_archived": True}, headers=bob_headers
+    )
+    assert r.status_code == 403
+
+
+def test_admin_can_archive_non_member_project(client):
+    lead_headers = _auth_headers(client)
+    client.post("/projects", json={"code": "ARC", "name": "x"}, headers=lead_headers)
+    admin_headers = _register_admin(client)
+
+    r = client.patch(
+        "/projects/ARC", json={"is_archived": True}, headers=admin_headers
+    )
+    assert r.status_code == 200
+    assert r.json()["is_archived"] is True
+
+
 def test_non_member_non_admin_blocked(client):
     lead_headers = _auth_headers(client)
     client.post("/projects", json={"code": "MRD", "name": "x"}, headers=lead_headers)
