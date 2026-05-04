@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import ArchivePage from './pages/ArchivePage'
 import BoardPage from './pages/BoardPage'
 import LoginPage from './pages/LoginPage'
+import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import ProjectsPage from './pages/ProjectsPage'
 import RegisterPage from './pages/RegisterPage'
 
@@ -11,6 +12,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/auth/callback" element={<OAuthCallbackPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/board" element={<BoardPage />} />

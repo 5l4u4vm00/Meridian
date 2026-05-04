@@ -1,4 +1,7 @@
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from ...core.config import settings
@@ -58,6 +61,16 @@ def me(user=Depends(get_current_user)) -> UserRead:
     return UserRead.from_user(user)
 
 
+def _frontend_redirect(tokens: TokenPair | None = None, error: str | None = None) -> RedirectResponse:
+    base = settings.frontend_base_url.rstrip("/")
+    if error:
+        return RedirectResponse(url=f"{base}/auth/callback#{urlencode({'error': error})}")
+    params = urlencode(
+        {"access_token": tokens.access_token, "refresh_token": tokens.refresh_token}
+    )
+    return RedirectResponse(url=f"{base}/auth/callback#{params}")
+
+
 def _require_client(provider: str):
     client = getattr(oauth, provider, None)
     if client is None:
@@ -72,8 +85,8 @@ async def google_login(request: Request):
     return await client.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/google/callback", response_model=TokenPair)
-async def google_callback(request: Request, db: Session = Depends(get_db)) -> TokenPair:
+@router.get("/google/callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)) -> RedirectResponse:
     client = _require_client("google")
     token = await client.authorize_access_token(request)
     info = token.get("userinfo") or await client.userinfo(token=token)
@@ -81,14 +94,15 @@ async def google_callback(request: Request, db: Session = Depends(get_db)) -> To
     email = info.get("email")
     name = info.get("name") or (email.split("@")[0] if email else "user")
     if not sub or not email:
-        raise HTTPException(status_code=400, detail="google returned no identity")
+        return _frontend_redirect(error="google returned no identity")
     try:
         user = auth_service.login_or_create_from_oauth(
             db, provider="google", provider_account_id=str(sub), email=email, name=name
         )
     except AuthError as e:
-        _raise(e)
-    return auth_service.issue_token_pair(db, user)
+        return _frontend_redirect(error=e.message)
+    tokens = auth_service.issue_token_pair(db, user)
+    return _frontend_redirect(tokens=tokens)
 
 
 @router.get("/github/login")
@@ -98,8 +112,8 @@ async def github_login(request: Request):
     return await client.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/github/callback", response_model=TokenPair)
-async def github_callback(request: Request, db: Session = Depends(get_db)) -> TokenPair:
+@router.get("/github/callback")
+async def github_callback(request: Request, db: Session = Depends(get_db)) -> RedirectResponse:
     client = _require_client("github")
     token = await client.authorize_access_token(request)
     profile = (await client.get("user", token=token)).json()
@@ -111,11 +125,12 @@ async def github_callback(request: Request, db: Session = Depends(get_db)) -> To
         primary = next((e for e in emails if e.get("primary") and e.get("verified")), None)
         email = primary["email"] if primary else None
     if not gh_id or not email:
-        raise HTTPException(status_code=400, detail="github returned no identity")
+        return _frontend_redirect(error="github returned no identity")
     try:
         user = auth_service.login_or_create_from_oauth(
             db, provider="github", provider_account_id=str(gh_id), email=email, name=name
         )
     except AuthError as e:
-        _raise(e)
-    return auth_service.issue_token_pair(db, user)
+        return _frontend_redirect(error=e.message)
+    tokens = auth_service.issue_token_pair(db, user)
+    return _frontend_redirect(tokens=tokens)

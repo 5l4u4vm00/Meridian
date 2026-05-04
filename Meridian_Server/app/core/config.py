@@ -14,8 +14,10 @@ class Settings(BaseSettings):
 
     session_secret: str = "dev-insecure-change-me-too"
     oauth_redirect_base: str = "http://localhost:8000"
+    frontend_base_url: str = "http://localhost:8080"
     cors_origins: list[str] = [
         "http://localhost:8080",
+        "http://localhost:8081",
         "http://127.0.0.1:8080",
     ]
 

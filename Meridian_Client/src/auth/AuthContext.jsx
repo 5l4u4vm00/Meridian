@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
     setStatus('anon')
   }, [])
 
-  const value = { user, status, login, register, logout }
+  const value = { user, status, login, register, logout, handleTokens }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
