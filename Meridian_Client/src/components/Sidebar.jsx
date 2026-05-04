@@ -75,18 +75,14 @@ export default function Sidebar({
           <span>Library</span>
           <span className="section-label-num">ii.</span>
         </div>
-        <div className="nav-item">
+        <Link to="/team" className="nav-item">
           <Users size={14} strokeWidth={1.5} />
           <span>Team</span>
-        </div>
+        </Link>
         <Link to="/archive" className="nav-item">
           <Archive size={14} strokeWidth={1.5} />
           <span>Archive</span>
         </Link>
-        <div className="nav-item">
-          <Settings size={14} strokeWidth={1.5} />
-          <span>Settings</span>
-        </div>
       </div>
     </aside>
   )

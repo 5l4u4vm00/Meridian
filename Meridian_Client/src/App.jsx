@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import ProjectsPage from './pages/ProjectsPage'
 import RegisterPage from './pages/RegisterPage'
+import TeamPage from './pages/TeamPage'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/board" element={<BoardPage />} />
         <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/team" element={<TeamPage />} />
       </Route>
     </Routes>
   )
