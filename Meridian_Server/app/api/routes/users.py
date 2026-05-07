@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from ...core import permissions
 from ...schemas.user import RoleAssign, UserCreate, UserRead
 from ...services import user_service
 from ...services.user_service import UserServiceError
-from ..deps import get_db, require_role
+from ..deps import get_db, require_permission
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -31,7 +32,7 @@ def list_users(db: Session = Depends(get_db)):
 @router.put(
     "/{user_id}/role",
     response_model=UserRead,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_permission(permissions.USERS_MANAGE))],
 )
 def set_user_role(user_id: int, payload: RoleAssign, db: Session = Depends(get_db)):
     try:

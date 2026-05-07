@@ -36,13 +36,13 @@ def test_non_admin_cannot_assign_role(client):
     alice_id = user_repository.get_by_email(_db(client), "alice@example.com").id
     r = client.put(
         f"/users/{alice_id}/role",
-        json={"role": "editor"},
+        json={"role": "admin"},
         headers={"Authorization": f"Bearer {admin_tokens['access_token']}"},
     )
     assert r.status_code == 403
 
 
-def test_admin_can_promote_user_to_editor(client):
+def test_admin_can_promote_user_to_admin(client):
     _register(client, "alice@example.com")
     _register(client, "admin@example.com")
     _promote_to_admin(client, "admin@example.com")
@@ -51,16 +51,16 @@ def test_admin_can_promote_user_to_editor(client):
     alice_id = user_repository.get_by_email(_db(client), "alice@example.com").id
     r = client.put(
         f"/users/{alice_id}/role",
-        json={"role": "editor"},
+        json={"role": "admin"},
         headers={"Authorization": f"Bearer {admin_tokens['access_token']}"},
     )
     assert r.status_code == 200
-    assert r.json()["role"] == "editor"
+    assert r.json()["role"] == "admin"
 
     alice_tokens = _login(client, "alice@example.com")
     claims = decode_token(alice_tokens["access_token"])
-    assert claims["role"] == "editor"
-    assert "content:write" in claims["perms"]
+    assert claims["role"] == "admin"
+    assert "users:manage" in claims["perms"]
 
 
 def test_admin_rejects_unknown_role(client):
@@ -84,7 +84,7 @@ def test_admin_role_assignment_on_missing_user(client):
 
     r = client.put(
         "/users/9999/role",
-        json={"role": "editor"},
+        json={"role": "admin"},
         headers={"Authorization": f"Bearer {admin_tokens['access_token']}"},
     )
     assert r.status_code == 404

@@ -85,9 +85,9 @@ def test_require_permission_allows_with_perm(client):
     _register(client)
     db = _db_from_client(client)
     try:
-        role_repository.ensure_role(db, "editor", ["widget:write"])
+        role_repository.ensure_role(db, "writer", ["widget:write"])
         user = user_repository.get_by_email(db, "a@b.com")
-        role_repository.assign_role(db, user, "editor")
+        role_repository.assign_role(db, user, "writer")
     finally:
         db.close()
 
@@ -141,3 +141,37 @@ def test_require_role_checks_role_claim(client):
 def test_require_permission_rejects_missing_token(client):
     r = client.get("/_test/needs-perm")
     assert r.status_code == 401
+
+
+def test_seed_does_not_create_retired_editor_role(client):
+    db = _db_from_client(client)
+    try:
+        assert role_repository.get_role_by_name(db, "editor") is None
+        assert role_repository.get_role_by_name(db, "admin") is not None
+        assert role_repository.get_role_by_name(db, "user") is not None
+    finally:
+        db.close()
+
+
+def test_set_user_role_gated_by_users_manage_permission(client):
+    """Non-admin user with users:manage permission can set roles."""
+    _register(client, email="manager@example.com")
+    _register(client, email="target@example.com")
+    db = _db_from_client(client)
+    try:
+        role_repository.ensure_role(db, "user_manager", ["users:manage"])
+        manager = user_repository.get_by_email(db, "manager@example.com")
+        role_repository.assign_role(db, manager, "user_manager")
+        target_id = user_repository.get_by_email(db, "target@example.com").id
+    finally:
+        db.close()
+
+    tokens = client.post(
+        "/auth/login", json={"email": "manager@example.com", "password": "password123"}
+    ).json()
+    r = client.put(
+        f"/users/{target_id}/role",
+        json={"role": "admin"},
+        headers={"Authorization": f"Bearer {tokens['access_token']}"},
+    )
+    assert r.status_code == 200
